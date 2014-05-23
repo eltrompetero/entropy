@@ -4,7 +4,7 @@
 
 import numpy as np
 
-def estimate_S():
+def estimate_S(votes):
     """
         Estimate the entropy of a partially complete data set (missing voters from some
         votes. Fill in the missing votes with the empirical probabilities of those 
@@ -13,9 +13,17 @@ def estimate_S():
             votes : array of votes, a vote in each row
     2014-05-22
     """
-    for v in votes:
-        break
-    return
+    votes,counts = fill_in_vote(votes)
+    uVotes = np.array([x for x in set(tuple(x) for x in votes)])
+    
+    p = np.zeros((uVotes.shape[0]))
+    i = 0
+    for v in uVotes:
+        ix = np.sum(v==votes,1)==votes.shape[1]
+        p[i] = np.sum(counts[ix])
+        i += 1
+    p /= np.sum(p)
+    return -np.sum(p*np.log(p)),p
 
 def fill_in_vote(votes):
     """
@@ -32,6 +40,8 @@ def fill_in_vote(votes):
                 second the fractional count of that vote
     2014-05-22
     """
+    from misc_fcns import unique_rows
+
     filledVotes = []
     for v in votes:
         nanIx = np.argwhere(np.isnan(v)).flatten()
@@ -43,16 +53,16 @@ def fill_in_vote(votes):
             # Just get the complete voting record of the missing people.
             fullVoteIx = np.sum(np.isnan(votes[:,nanIx])==0,1)==nanN
             subVotes = votes[:,nanIx][fullVoteIx,:]
-            allStates = get_all_states(nanN)
-            
-            p = get_state_probs(subVotes,allStates)
+            uSubVotes = subVotes[unique_rows(subVotes),:]
+
+            p = get_state_probs(subVotes,uSubVotes)
             # Now, fill the entries of vote.
-            for i in range(2**nanN):
+            for i in range(p.size):
                 _vote = v.copy()
-                _vote[nanIx] = allStates[i]
+                _vote[nanIx] = uSubVotes[i,:]
                 filledVotes.append(( _vote,p[i] ))
 
-    return filledVotes
+    return [np.array(i) for i in zip(*filledVotes)]
 
 def SMa(data):
     """
