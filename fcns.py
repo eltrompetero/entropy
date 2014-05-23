@@ -53,6 +53,8 @@ def fill_in_vote(votes):
             # Just get the complete voting record of the missing people.
             fullVoteIx = np.sum(np.isnan(votes[:,nanIx])==0,1)==nanN
             subVotes = votes[:,nanIx][fullVoteIx,:]
+            if subVotes.shape[0]==0:
+                raise Exception("There is insufficient data to measure subset.")
             uSubVotes = subVotes[unique_rows(subVotes),:]
 
             p = get_state_probs(subVotes,uSubVotes)
@@ -244,9 +246,9 @@ def get_state_probs(v,allstates=None):
             ix = np.sum( vote==v ,1)==n
             freq[j] = np.sum(ix)
             j+=1
-        if np.sum(freq)==0:
+        if np.sum(freq)!=v.shape[0]:
             import warnings
-            warnings.warn("State not found in given list of all states.")
+            warnings.warn("States not found in given list of all states.")
     freq = freq.astype(float)/np.sum(freq)
     return freq
 
