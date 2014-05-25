@@ -148,7 +148,11 @@ def get_p_maj(data, allmajstates=None,kmx=None):
 def convert_to_maj(states,maj0or1=1):
     """
         Convert given states such that 0 or 1 corresponds to the majority vote. Split
-        votes are left as tehy are.
+        votes are left as they are.
+        Args:
+            states:
+            *kwargs
+            maj0or1 : default 1
     2014-02-08
     """
     if not np.array_equal( np.unique(states),np.array([0,1]) ):
@@ -190,23 +194,32 @@ def squareform(x):
     from scipy.spatial import distance
     return distance.squareform(x)
 
-def calc_sisj(data):
+def calc_sisj(data,weighted=None):
     """
-    2013-12-19
         Each sample state along a row.
+
+        *kwargs:
+        weighted (np.ndarray,None) : 
+        Calculate single and pairwise means given fractional weights for each state in
+        the data such that a state only appears with some weight, typically less than
+        one
+
         Value:
             (si,sisj) : duplet of singlet and dubplet means
+    2014-05-25
     """
     (S,N) = data.shape
     sisj = np.zeros(N*(N-1)/2)
+    
+    if weighted is None:
+        weighted = np.zeros((data.shape[0]))
 
     k=0
     for i in range(N-1):
         for j in range(i+1,N):
-            sisj[k] = np.mean(data[:,i]*data[:,j])
+            sisj[k] = np.sum(data[:,i]*data[:,j]*weighted)/data.shape[0].astype(float)
             k+=1
-
-    return(np.mean(data,0),sisj)
+    return (np.sum(data,0)/data.shape[0].astype(float),sisj)
 
 def nan_calc_sisj(data):
     """
