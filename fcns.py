@@ -217,9 +217,9 @@ def calc_sisj(data,weighted=None):
     k=0
     for i in range(N-1):
         for j in range(i+1,N):
-            sisj[k] = np.sum(data[:,i]*data[:,j]*weighted)/data.shape[0].astype(float)
+            sisj[k] = np.sum(data[:,i]*data[:,j]*weighted)/float(np.sum(weighted))
             k+=1
-    return (np.sum(data,0)/data.shape[0].astype(float),sisj)
+    return (np.sum(data*np.expand_dims(weighted,1),0)/float(np.sum(weighted)),sisj)
 
 def nan_calc_sisj(data):
     """
