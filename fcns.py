@@ -32,39 +32,48 @@ def fill_in_vote(votes):
         then add a count for it. If it isn't complete, go through all possible
         completions of the missing votes given the marginal distributions and give the
         fractional count for each possibility
+        Filling in must start with singlets, duplet, tuplet, etc. in order to maintain
+        original means.
         NB20140522 
         Args: 
             votes : array of votes, a vote on each row
         Value:
             filledVotes : list of duplets with first element the vote registered and the
                 second the fractional count of that vote
-    2014-05-22
+    2014-05-26
     """
     from misc_fcns import unique_rows
-
-    filledVotes = []
-    for v in votes:
-        nanIx = np.argwhere(np.isnan(v)).flatten()
-        nanN = nanIx.size
-        
-        if nanN==0:
-            filledVotes.append(( v,1. ))
-        else:
+    
+    filledVotes,counts = votes.copy(),np.ones((votes.shape[0]))
+    for nanN in range(1,votes.shape[1]):
+        for v in filledVotes[np.sum(np.isnan(filledVotes),1)==nanN,:]:
+            nanIx = np.argwhere(np.isnan(v)).flatten()
+            
             # Just get the complete voting record of the missing people.
-            fullVoteIx = np.sum(np.isnan(votes[:,nanIx])==0,1)==nanN
-            subVotes = votes[:,nanIx][fullVoteIx,:]
+            fullVoteIx = np.sum(np.isnan(filledVotes[:,nanIx])==0,1)==nanN
+            subVotes = filledVotes[:,nanIx][fullVoteIx,:]
             if subVotes.shape[0]==0:
                 raise Exception("There is insufficient data to measure subset.")
-            uSubVotes = subVotes[unique_rows(subVotes),:]
-
-            p = get_state_probs(subVotes,uSubVotes)
+            uIx = unique_rows(subVotes)
+            uSubVotes = subVotes[uIx,:]
+            
+            p = get_state_probs( subVotes,uSubVotes, weights=counts[fullVoteIx] )
+                        
             # Now, fill the entries of vote.
+            toAddVotes,toAddCounts = [],[]
             for i in range(p.size):
                 _vote = v.copy()
                 _vote[nanIx] = uSubVotes[i,:]
-                filledVotes.append(( _vote,p[i] ))
+                toAddVotes.append(( _vote ))
+                toAddCounts.append(( p[i] ))
+            filledVotes = np.vstack(( filledVotes,np.array(toAddVotes) ))
+            counts = np.hstack(( counts,np.array(toAddCounts) ))
+        # Removed these filled votes.
+        keepIx = np.sum(np.isnan(filledVotes),1)!=nanN
+        counts = counts[keepIx]
+        filledVotes = filledVotes[keepIx,:]
 
-    return [np.array(i) for i in zip(*filledVotes)]
+    return filledVotes,counts
 
 def SMa(data):
     """
@@ -238,10 +247,14 @@ def nan_calc_sisj(data):
 
     return ( np.nansum(data,0)/np.sum(np.isnan(data)==0,0), sisj )
 
-def get_state_probs(v,allstates=None):
+def get_state_probs(v,allstates=None,weights=None):
     """
-    Get probability of states given in {0,1} representation.
-    2014-02-11
+        Get probability of states given in {0,1} representation. There is an option to
+        allow for weights counting of the words.
+        
+        def get_state_probs(v,allstates=None,weights=None):
+        Args : 
+    2014-05-26
     """
     if not (np.array_equal( np.unique(v),np.array([0,1]) ) or np.all(v==0) or np.all(v==1)):
         raise Exception("Given data array must be in {0,1} representation.")
@@ -254,12 +267,15 @@ def get_state_probs(v,allstates=None):
         allstates = unique_rows(v,return_inverse=True)
         freq,x = np.histogram( allstates,range(allstates.max()+2) )
     else:
+        if weights is None:
+            weights = np.ones((vote.shape[0]))
+
         freq = np.zeros(allstates.shape[0])
         for vote in allstates:
-            ix = np.sum( vote==v ,1)==n
-            freq[j] = np.sum(ix)
+            ix = np.sum( vote==v,1 )==n
+            freq[j] = np.sum(ix*weights)
             j+=1
-        if np.sum(freq)!=v.shape[0]:
+        if np.isclose(np.sum(freq),np.sum(weights))==0:
             import warnings
             warnings.warn("States not found in given list of all states.")
     freq = freq.astype(float)/np.sum(freq)
