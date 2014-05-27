@@ -164,13 +164,15 @@ def convert_to_maj(states, maj0or1=1):
             maj0or1 : default 1
     2014-02-08
     """
-    if not np.array_equal( np.unique(states),np.array([0,1]) ):
+    uS = np.unique(states)
+    if not np.array_equal( uS,np.array([0.,1.]) ) and not uS==0 and not uS==1:
         raise Exception("This function can only deal with {0,1}.")
 
     states = states.copy()
 
+    # In case where we are given one state.
     if states.ndim==1:
-        states = np.expand_dims(states,1)
+        states = np.expand_dims(states,0)
     n = states.shape[1]
     ix = np.sum(states,1) < np.ceil(n/2.)
     states[ix,:] = 1-states[ix,:]
