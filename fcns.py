@@ -154,7 +154,7 @@ def get_p_maj(data, allmajstates=None,kmx=None):
 
     return pk[::-1],np.arange(np.ceil(n/2.),n+1)
 
-def convert_to_maj(states,maj0or1=1):
+def convert_to_maj(states, maj0or1=1):
     """
         Convert given states such that 0 or 1 corresponds to the majority vote. Split
         votes are left as they are.
@@ -169,6 +169,8 @@ def convert_to_maj(states,maj0or1=1):
 
     states = states.copy()
 
+    if states.ndim==1:
+        states = np.expand_dims(states,1)
     n = states.shape[1]
     ix = np.sum(states,1) < np.ceil(n/2.)
     states[ix,:] = 1-states[ix,:]
