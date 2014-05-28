@@ -225,7 +225,7 @@ def calc_sisj(data,weighted=None):
     sisj = np.zeros(N*(N-1)/2)
     
     if weighted is None:
-        weighted = np.zeros((data.shape[0]))
+        weighted = np.ones((data.shape[0]))
 
     k=0
     for i in range(N-1):
@@ -233,6 +233,35 @@ def calc_sisj(data,weighted=None):
             sisj[k] = np.sum(data[:,i]*data[:,j]*weighted)/float(np.sum(weighted))
             k+=1
     return (np.sum(data*np.expand_dims(weighted,1),0)/float(np.sum(weighted)),sisj)
+
+def calc_cij(data,weighted=None):
+    """
+        Each sample state along a row.
+
+        *kwargs:
+        weighted (np.ndarray,None) : 
+        Calculate single and pairwise means given fractional weights for each state in
+        the data such that a state only appears with some weight, typically less than
+        one
+
+        Value:
+            (si,sisj) : duplet of singlet and dubplet means
+    2014-05-25
+    """
+    (S,N) = data.shape
+    cij = np.zeros(N*(N-1)/2)
+    
+    if weighted is None:
+        weighted = np.ones((data.shape[0]))
+    
+    si = np.sum(data*np.expand_dims(weighted,1),0)/float(np.sum(weighted))
+    k=0
+    for i in range(N-1):
+        for j in range(i+1,N):
+            cij[k] = np.sum(data[:,i]*data[:,j]*weighted)/float(np.sum(weighted))\
+                      -si[i]*si[j]
+            k+=1
+    return cij
 
 def nan_calc_sisj(data):
     """
