@@ -234,7 +234,7 @@ def calc_sisj(data,weighted=None):
             k+=1
     return (np.sum(data*np.expand_dims(weighted,1),0)/float(np.sum(weighted)),sisj)
 
-def calc_cij(data,weighted=None):
+def calc_cij(data,weighted=None,return_square=False):
     """
         Each sample state along a row.
 
@@ -243,9 +243,10 @@ def calc_cij(data,weighted=None):
         Calculate single and pairwise means given fractional weights for each state in
         the data such that a state only appears with some weight, typically less than
         one
+        return_square (bool,False) : return Cij matrix with means along diagonal
 
         Value:
-            (si,sisj) : duplet of singlet and dubplet means
+            (cij,cijMat) : duplet of singlet and dubplet means
     2014-05-25
     """
     (S,N) = data.shape
@@ -261,7 +262,13 @@ def calc_cij(data,weighted=None):
             cij[k] = np.sum(data[:,i]*data[:,j]*weighted)/float(np.sum(weighted))\
                       -si[i]*si[j]
             k+=1
-    return cij
+
+    if return_square:
+        cijMat = squareform(cij)
+        cijMat[np.eye(N)==1] = si
+        return cij,cijMat
+    else:
+        return cij
 
 def nan_calc_sisj(data):
     """
@@ -287,6 +294,8 @@ def get_state_probs(v,allstates=None,weights=None):
         
         def get_state_probs(v,allstates=None,weights=None):
         Args : 
+        Val:
+            freq (ndarray) : vector of the probabilities of each state
     2014-05-26
     """
     if not (np.array_equal( np.unique(v),np.array([0,1]) ) or np.all(v==0) or np.all(v==1)):
@@ -301,7 +310,7 @@ def get_state_probs(v,allstates=None,weights=None):
         freq,x = np.histogram( allstates,range(allstates.max()+2) )
     else:
         if weights is None:
-            weights = np.ones((vote.shape[0]))
+            weights = np.ones((v.shape[0]))
 
         freq = np.zeros(allstates.shape[0])
         for vote in allstates:
@@ -441,18 +450,26 @@ def calc_s(n,p):
                 print i,j,k
     return S
 
-def calc_sijk(data):
+def calc_sijk(data,vecout=False):
     """
         Calculate sijk in {0,1}.
-        2013-06-25
+        2014-08-22
     """
     from itertools import combinations
-
+    from scipy.special import binom
     n = data.shape[1]
-    sijk = np.zeros((n,n,n))
+    
+    if vecout:
+        sijk = np.zeros((binom(n,3)))
+        j = 0
+        for i in combinations(range(n),3):
+            sijk[j] = np.mean(data[:,i[0]]*data[:,i[1]]*data[:,i[2]])
+            j += 1
+    else:
+        sijk = np.zeros((n,n,n))
 
-    for i in combinations(range(n),3):
-        sijk[i[0],i[1],i[2]] = np.mean(data[:,i[0]]*data[:,i[1]]*data[:,i[2]])
+        for i in combinations(range(n),3):
+            sijk[i[0],i[1],i[2]] = np.mean(data[:,i[0]]*data[:,i[1]]*data[:,i[2]])
 
     return sijk
 
