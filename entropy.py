@@ -4,6 +4,14 @@
 
 import numpy as np
 
+def dkl(p1,p2):
+    """
+        Compute DKL between two probability distributions. Naive.
+    2014-11-11
+    """
+    dkl = p1*np.log(p1/p2)
+    return np.nansum( dkl )
+
 def estimate_S(votes):
     """
         Estimate the entropy of a partially complete data set (missing voters from some
@@ -204,7 +212,7 @@ def get_all_states(n,sym=False):
     if sym is False:
         return states
     else:
-        return -1*(states*2-1)
+        return states*2-1
 
 def squareform(x):
     """
