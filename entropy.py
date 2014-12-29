@@ -332,7 +332,7 @@ def get_state_probs(v,allstates=None,weights=None):
     n = v.shape[1]
     j=0
 
-    if allstates==None:
+    if allstates is None:
         allstates = unique_rows(v,return_inverse=True)
         freq,x = np.histogram( allstates,range(allstates.max()+2) )
     else:
