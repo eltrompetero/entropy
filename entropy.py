@@ -216,16 +216,13 @@ def get_all_states(n,sym=False):
         raise Exception("n cannot be <0")
     if n>15:
         raise Exception("n is too large to enumerate all states.")
+    
+    v = np.array([list(np.binary_repr(i,width=n)) for i in range(2**n)]).astype('uint8')
 
-    states = np.zeros((2**n,n))
-    j=0
-    for i in np.ndindex((2,)*n):
-        states[j,:] = i
-        j+=1
     if sym is False:
-        return states
+        return v
     else:
-        return states*2-1
+        return v*2.-1
 
 def squareform(x):
     """
