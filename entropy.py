@@ -17,12 +17,17 @@ def find_state_ix(data,states):
         j += 1
     return ix.astype('int')
 
-def dkl(p1,p2):
+def dkl(p1,p2,units=2):
     """
         Compute DKL between two probability distributions. Naive.
+        dkl = sum( p1*log(p2) )
+        Args:
+            p1 : 
+            p2 (ndarray)
+            units (opt,default 2) : units for log
     2014-11-11
     """
-    dkl = p1*np.log(p1/p2)
+    dkl = p1*np.log(p1/p2)/log(units)
     return np.nansum( dkl )
 
 def estimate_S(votes):
