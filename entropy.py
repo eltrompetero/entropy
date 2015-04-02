@@ -4,6 +4,22 @@
 
 import numpy as np
 
+def MI(pmat):
+    """
+    Calculate mutual information between two probability distributions.
+    2015-04-02
+    """
+    if pmat.shape[0]!=pmat.shape[1]:
+        raise Exception("Given probability matrix is not square.")
+    
+    mi = []
+    p1 = np.sum(pmat,1)
+    p2 = np.sum(pmat,0)
+    for i in range(pmat.shape[0]):
+        for j in range(pmat.shape[0]):
+            mi.append( pmat[i,j]*np.log2( pmat[i,j]/(p1[i]*p2[j]) ) )
+    return np.nansum( mi )
+
 def find_state_ix(data,states):
     """
         Inefficient way of getting index of rows of data matrix in given matrix of possible states.
@@ -25,9 +41,9 @@ def dkl(p1,p2,units=2):
             p1 : 
             p2 (ndarray)
             units (opt,default 2) : units for log
-    2014-11-11
+    2015-02-14
     """
-    dkl = p1*np.log(p1/p2)/log(units)
+    dkl = p1*np.log(p1/p2)/np.log(units)
     return np.nansum( dkl )
 
 def estimate_S(votes):
@@ -143,7 +159,7 @@ def calc_p_J(J,n):
     """
     from fast import calc_e
 
-    e = calc_e(J,get_allstates(n))
+    e = calc_e(J,get_all_states(n))
     expe = np.exp(-e)
     return expe/np.sum(expe)
 
@@ -182,12 +198,14 @@ def get_p_maj(data, allmajstates=None,kmx=None):
 
 def convert_to_maj(states, maj0or1=1):
     """
-        Convert given states such that 0 or 1 corresponds to the majority vote. Split
-        votes are left as they are.
-        Args:
-            states:
-            *kwargs
-            maj0or1 : default 1
+    Convert given states such that 0 or 1 corresponds to the majority vote. Split
+    votes are left as they are.
+    Args:
+        states:
+        *kwargs
+        maj0or1 : default 1
+    Value:
+        states : states converted to majority vote
     2014-02-08
     """
     uS = np.unique(states)
