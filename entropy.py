@@ -147,6 +147,7 @@ def SMa(data):
 
 def Snaive(samples):
     """
+    Calculate entropy in bits.
     2014-02-19
     """
     freq = get_state_probs(samples)
@@ -226,6 +227,30 @@ def convert_to_maj(states, maj0or1=1):
 
     return states
 
+def bin_states(n,sym=False):
+    """
+    Get all possible binary spin states. Remember that these are uint8 so if
+    you want to do arithmetic, must convert to float.
+    Params:
+    --------
+    n (int)
+        number of spins
+    sym (bool)
+        if true, return {-1,1} basis
+    2014-08-26
+    """
+    if n<0:
+        raise Exception("n cannot be <0")
+    if n>15:
+        raise Exception("n is too large to enumerate all states.")
+    
+    v = np.array([list(np.binary_repr(i,width=n)) for i in range(2**n)]).astype('uint8')
+
+    if sym is False:
+        return v
+    else:
+        return v*2.-1
+
 def get_all_states(n,sym=False):
     """
         Get all possible binary spin states. Remember that these are uint8 so if
@@ -235,6 +260,8 @@ def get_all_states(n,sym=False):
             sym : if true, return {-1,1} basis
     2014-08-26
     """
+    import warnings
+    warnings.warn("This is deprecated to bin_states(). That name is superior.")
     if n<0:
         raise Exception("n cannot be <0")
     if n>15:
@@ -254,18 +281,23 @@ def squareform(x):
     from scipy.spatial import distance
     return distance.squareform(x)
 
-def calc_sisj(data,weighted=None):
+def calc_sisj(data,weighted=None,concat=False):
     """
-        Each sample state along a row.
+    Each sample state along a row.
 
-        *kwargs:
-        weighted (np.ndarray,None) : 
+    Params:
+    ------
+    weighted (np.ndarray,None) : 
         Calculate single and pairwise means given fractional weights for each state in
         the data such that a state only appears with some weight, typically less than
         one
+    concat (bool,False)
+        return concatenated means if true
 
-        Value:
-            (si,sisj) : duplet of singlet and dubplet means
+    Value:
+    ------
+    (si,sisj) or sisisj
+        duplet of singlet and dubplet means
     2014-05-25
     """
     (S,N) = data.shape
