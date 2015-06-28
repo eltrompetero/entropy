@@ -311,7 +311,10 @@ def calc_sisj(data,weighted=None,concat=False):
         for j in range(i+1,N):
             sisj[k] = np.sum(data[:,i]*data[:,j]*weighted)/float(np.sum(weighted))
             k+=1
-    return (np.sum(data*np.expand_dims(weighted,1),0)/float(np.sum(weighted)),sisj)
+    if concat:
+        return np.concatenate((np.sum(data*np.expand_dims(weighted,1),0)/float(np.sum(weighted)),sisj))
+    else:
+        return (np.sum(data*np.expand_dims(weighted,1),0)/float(np.sum(weighted)),sisj)
 
 def calc_cij(data,weighted=None,return_square=False):
     """
@@ -601,3 +604,32 @@ def calc_nth_correl(data,n,weighted=False,vecout=True):
             s[i[0],i[1],i[2]] = np.sum(weighted*(
                 data[:,i[0]]*data[:,i[1]]*data[:,i[2]]))
     return s
+
+def convert_sisj(sisj,si,convertTo='11'):
+    """
+    Convert <sisj> between 01 and 11 formulations.
+    2015-06-28
+
+    Params:
+    -------
+    sisj (ndarray)
+    si (ndarray)
+    convertTo (str,'11')
+        '11' will convert {0,1} formulation to +/-1 and '01' will convert +/-1 formulation to {0,1}
+    """
+    if convertTo=='11':
+        newsisj = np.zeros(sisj.shape)
+        k = 0
+        for i in range(len(si)-1):
+            for j in range(i+1,len(si)):
+                newsisj[k] = 4*sisj[k] - 2*si[i] - 2*si[i] + 1
+                k += 1
+    else:
+        newsisj = np.zeros(sisj.shape)
+        k = 0
+        for i in range(len(si)-1):
+            for j in range(i+1,len(si)):
+                newsisj[k] = ( sisj[k] + si[i] + si[i] + 1 )/4.
+                k += 1
+    return newsisj
+
