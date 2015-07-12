@@ -2,6 +2,7 @@
 #
 # 2013-06-25
 
+from __future__ import division
 import numpy as np
 
 def MI(pmat):
@@ -227,6 +228,27 @@ def convert_to_maj(states, maj0or1=1):
 
     return states
 
+def xbin_states(n,sym=False):
+    """Generator for producing binary states.
+    Params:
+    --------
+    n (int)
+        number of spins
+    sym (bool)
+        if true, return {-1,1} basis
+    2014-08-26
+    """
+    assert n>0, "n cannot be <0"
+    
+    def v():
+        for i in range(2**n):
+            if sym is False:
+                yield np.array(list(np.binary_repr(i,width=n))).astype('int')
+            else:
+                yield np.array(list(np.binary_repr(i,width=n))).astype('int')*2.-1
+
+    return v()
+
 def bin_states(n,sym=False):
     """
     Get all possible binary spin states. Remember that these are uint8 so if
@@ -281,6 +303,37 @@ def squareform(x):
     from scipy.spatial import distance
     return distance.squareform(x)
 
+def calc_nan_sisj(data,weighted=None,concat=False):
+    """
+    Each sample state along a row.
+
+    Params:
+    ------
+    weighted (np.ndarray,None) : 
+        Calculate single and pairwise means given fractional weights for each state in
+        the data such that a state only appears with some weight, typically less than
+        one
+    concat (bool,False)
+        return concatenated means if true
+
+    Value:
+    ------
+    (si,sisj) or sisisj
+        duplet of singlet and dubplet means
+    2015-06-28
+    """
+    (S,N) = data.shape
+    sisj = np.zeros(N*(N-1)/2)
+    
+    k=0
+    for i in range(N-1):
+        for j in range(i+1,N):
+            col = data[:,i]*data[:,j]
+            sisj[k] = np.nanmean(col)
+            k+=1
+    
+    return (np.nanmean(data,0), sisj)
+
 def calc_sisj(data,weighted=None,concat=False):
     """
     Each sample state along a row.
@@ -300,7 +353,7 @@ def calc_sisj(data,weighted=None,concat=False):
         duplet of singlet and dubplet means
     2014-05-25
     """
-    (S,N) = data.shape
+    S,N = data.shape
     sisj = np.zeros(N*(N-1)/2)
     
     if weighted is None:
@@ -309,12 +362,12 @@ def calc_sisj(data,weighted=None,concat=False):
     k=0
     for i in range(N-1):
         for j in range(i+1,N):
-            sisj[k] = np.sum(data[:,i]*data[:,j]*weighted)/float(np.sum(weighted))
+            sisj[k] = np.nansum(data[:,i]*data[:,j]*weighted)/float(np.nansum(weighted))
             k+=1
     if concat:
-        return np.concatenate((np.sum(data*np.expand_dims(weighted,1),0)/float(np.sum(weighted)),sisj))
+        return np.concatenate((np.nansum(data*np.expand_dims(weighted,1),0)/float(np.nansum(weighted)),sisj))
     else:
-        return (np.sum(data*np.expand_dims(weighted,1),0)/float(np.sum(weighted)),sisj)
+        return (np.nansum(data*np.expand_dims(weighted,1),0)/float(np.nansum(weighted)),sisj)
 
 def calc_cij(data,weighted=None,return_square=False):
     """
@@ -629,7 +682,7 @@ def convert_sisj(sisj,si,convertTo='11'):
         k = 0
         for i in range(len(si)-1):
             for j in range(i+1,len(si)):
-                newsisj[k] = ( sisj[k] + si[i] + si[i] + 1 )/4.
+                newsisj[k] = ( sisj[k] + si[i] + si[j] + 1 )/4.
                 k += 1
     return newsisj
 
