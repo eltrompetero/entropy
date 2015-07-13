@@ -7,8 +7,13 @@ import numpy as np
 
 def MI(pmat):
     """
-    Calculate mutual information between two probability distributions.
+    Calculate mutual information between the joint probability distributions in bits.
     2015-04-02
+
+    Params:
+    -------
+    pmat (ndarray)
+        2D array
     """
     if pmat.shape[0]!=pmat.shape[1]:
         raise Exception("Given probability matrix is not square.")
@@ -675,7 +680,7 @@ def convert_sisj(sisj,si,convertTo='11'):
         k = 0
         for i in range(len(si)-1):
             for j in range(i+1,len(si)):
-                newsisj[k] = 4*sisj[k] - 2*si[i] - 2*si[i] + 1
+                newsisj[k] = 4*sisj[k] - 2*si[i] - 2*si[j] + 1
                 k += 1
     else:
         newsisj = np.zeros(sisj.shape)
