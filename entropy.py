@@ -427,7 +427,7 @@ def nan_calc_sisj(data):
 
     return ( np.nansum(data,0)/np.sum(np.isnan(data)==0,0), sisj )
 
-def get_state_probs(v,allstates=None,weights=None):
+def get_state_probs(v,allstates=None,weights=None,normalized=True):
     """
         Get probability of states given in {0,1} representation. There is an option to
         allow for weights counting of the words.
@@ -460,7 +460,8 @@ def get_state_probs(v,allstates=None,weights=None):
         if np.isclose(np.sum(freq),np.sum(weights))==0:
             import warnings
             warnings.warn("States not found in given list of all states.")
-    freq = freq.astype(float)/np.sum(freq)
+    if normalized:
+        freq = freq.astype(float)/np.sum(freq)
     return freq
 
 def calc_sn(n,S):
