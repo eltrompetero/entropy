@@ -29,13 +29,12 @@ def MI(pmat):
 def find_state_ix(data,states):
     """
         Inefficient way of getting index of rows of data matrix in given matrix of possible states.
-    2014-12-22
+    2015-07-25
     """
     ix = np.zeros((data.shape[0]))
     j = 0
     for i in data:
-        ix[j] = np.argwhere( np.sum(np.tile(i,(states.shape[0],1))==states,
-                            1)==states.shape[1] )
+        ix[j] = np.argwhere( np.sum(i[None,:]==states,1)==states.shape[1] )
         j += 1
     return ix.astype('int')
 
