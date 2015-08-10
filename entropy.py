@@ -28,7 +28,7 @@ def MI(pmat):
 
 def find_state_ix(data,states):
     """
-        Inefficient way of getting index of rows of data matrix in given matrix of possible states.
+    Inefficient way of getting index of rows of data matrix in given matrix of possible states.
     2015-07-25
     """
     ix = np.zeros((data.shape[0]))
@@ -40,12 +40,12 @@ def find_state_ix(data,states):
 
 def dkl(p1,p2,units=2):
     """
-        Compute DKL between two probability distributions. Naive.
-        dkl = sum( p1*log(p2) )
-        Args:
-            p1 : 
-            p2 (ndarray)
-            units (opt,default 2) : units for log
+    Compute DKL between two probability distributions. Naive.
+    dkl = sum( p1*log(p2) )
+    Args:
+        p1 : 
+        p2 (ndarray)
+        units (opt,default 2) : units for log
     2015-02-14
     """
     dkl = p1*np.log(p1/p2)/np.log(units)
@@ -371,7 +371,7 @@ def calc_sisj(data,weighted=None,concat=False):
     if concat:
         return np.concatenate((np.nansum(data*np.expand_dims(weighted,1),0)/float(np.nansum(weighted)),sisj))
     else:
-        return (np.nansum(data*np.expand_dims(weighted,1),0)/float(np.nansum(weighted)),sisj)
+        return np.nansum(data*weighted[:,None],0)/float(np.nansum(weighted)), sisj
 
 def calc_cij(data,weighted=None,return_square=False):
     """
@@ -674,6 +674,11 @@ def convert_sisj(sisj,si,convertTo='11'):
     si (ndarray)
     convertTo (str,'11')
         '11' will convert {0,1} formulation to +/-1 and '01' will convert +/-1 formulation to {0,1}
+
+    Value:
+    ------
+    sisj
+        converted to appropriate basis
     """
     if convertTo=='11':
         newsisj = np.zeros(sisj.shape)
