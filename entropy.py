@@ -382,11 +382,12 @@ def calc_sisj(data,weighted=None,concat=False, excludeEmpty=False):
         return concatenated means if true
     excludeEmpty (bool,False)
         when using with {-1,1}, can leave entries with 0 and those will not be counted for any pair
+        weighted option doesn't do anything here
 
     Value:
     ------
     (si,sisj) or sisisj
-        duplet of singlet and dubplet means
+        duplet of singlet and duplet means
     2015-08-10
     """
     S,N = data.shape
@@ -397,20 +398,23 @@ def calc_sisj(data,weighted=None,concat=False, excludeEmpty=False):
 
     if excludeEmpty:
         k=0
-        for i in range(N-1):
-            for j in range(i+1,N):
+        for i in xrange(N-1):
+            for j in xrange(i+1,N):
                 sisj[k] = np.nansum(data[:,i]*data[:,j]) / np.nansum(np.logical_and(data[:,i]!=0,data[:,j]!=0))
                 k+=1
+        si = np.array([ np.nansum(col[col!=0]) / np.nansum(col!=0) for col in data.T ])
     else:
         k=0
-        for i in range(N-1):
-            for j in range(i+1,N):
+        for i in xrange(N-1):
+            for j in xrange(i+1,N):
                 sisj[k] = np.nansum(data[:,i]*data[:,j]*weighted) / np.nansum(weighted)
                 k+=1
+        si = np.nansum(data*weighted[:,None]) / np.nansum(weighted)
+
     if concat:
-        return np.concatenate((np.nansum(data*np.expand_dims(weighted,1),0)/(np.nansum(weighted)),sisj))
+        return np.concatenate((si,sisj))
     else:
-        return np.nansum(data*weighted[:,None],0)/float(np.nansum(weighted)), sisj
+        return si, sisj
 
 def calc_cij(data,weighted=None,return_square=False):
     """
