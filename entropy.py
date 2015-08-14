@@ -338,7 +338,7 @@ def calc_nan_sisj(data,weighted=None,concat=False):
     
     return (np.nanmean(data,0), sisj)
 
-def calc_sisj(data,weighted=None,concat=False):
+def calc_sisj(data,weighted=None,concat=False, excludeEmpty=False):
     """
     Each sample state along a row.
 
@@ -350,12 +350,14 @@ def calc_sisj(data,weighted=None,concat=False):
         one
     concat (bool,False)
         return concatenated means if true
+    excludeEmpty (bool,False)
+        when using with {-1,1}, can leave entries with 0 and those will not be counted for any pair
 
     Value:
     ------
     (si,sisj) or sisisj
         duplet of singlet and dubplet means
-    2014-05-25
+    2015-08-10
     """
     S,N = data.shape
     sisj = np.zeros(N*(N-1)/2)
@@ -363,13 +365,20 @@ def calc_sisj(data,weighted=None,concat=False):
     if weighted is None:
         weighted = np.ones((data.shape[0]))
 
-    k=0
-    for i in range(N-1):
-        for j in range(i+1,N):
-            sisj[k] = np.nansum(data[:,i]*data[:,j]*weighted)/float(np.nansum(weighted))
-            k+=1
+    if excludeEmpty:
+        k=0
+        for i in range(N-1):
+            for j in range(i+1,N):
+                sisj[k] = np.nansum(data[:,i]*data[:,j]) / np.nansum(np.logical_and(data[:,i]!=0,data[:,j]!=0))
+                k+=1
+    else:
+        k=0
+        for i in range(N-1):
+            for j in range(i+1,N):
+                sisj[k] = np.nansum(data[:,i]*data[:,j]*weighted) / np.nansum(weighted)
+                k+=1
     if concat:
-        return np.concatenate((np.nansum(data*np.expand_dims(weighted,1),0)/float(np.nansum(weighted)),sisj))
+        return np.concatenate((np.nansum(data*np.expand_dims(weighted,1),0)/(np.nansum(weighted)),sisj))
     else:
         return np.nansum(data*weighted[:,None],0)/float(np.nansum(weighted)), sisj
 
