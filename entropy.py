@@ -4,6 +4,36 @@
 
 from __future__ import division
 import numpy as np
+import clusters as cluster
+
+def cluster_probabilities(data,order):
+    """
+    Return probability distributions for subsets of system of binary variables. Given data should be in {-1,1} format where 0's are ignored in computation as non-votes (aren't included in computation of probabilities at all.
+    2015-08-14
+
+    Params:
+    -------
+    data (ndarray)
+        k x n matrix with samples x system size
+    """
+    n = data.shape[1]
+    if order==1:
+        return np.array([np.array([np.sum(col==1),np.sum(col==-1)])/np.sum(np.logical_or(col==-1,col==1)) 
+                        for col in data.T])
+    elif order==2:
+        pairsP = []
+        for i in xrange(n-1):
+            for j in xrange(i+1,n):
+                nVotesCast = np.sum(np.logical_and(data[:,i]!=0,data[:,j]!=0))
+                pairsP.append([ np.sum(np.logical_and(data[:,i]==1,data[:,j]==1)),
+                                np.sum(np.logical_and(data[:,i]==1,data[:,j]==-1)),
+                                np.sum(np.logical_and(data[:,i]==-1,data[:,j]==1)),
+                                np.sum(np.logical_and(data[:,i]==-1,data[:,j]==-1)) ])
+                pairsP[-1] = np.array(pairsP[-1]) / nVotesCast
+        return np.array(pairsP)
+    elif order==3:
+        return clusters.triplets_probabilities(data.astype(np.float64))
+    return
 
 def MI(pmat):
     """
