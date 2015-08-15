@@ -18,8 +18,8 @@ def cluster_probabilities(data,order):
     """
     n = data.shape[1]
     if order==1:
-        return np.array([np.array([np.sum(col==1),np.sum(col==-1)])/np.sum(np.logical_or(col==-1,col==1)) 
-                        for col in data.T])
+        return np.array([np.array([np.sum(col==-1),np.sum(col==1)])/np.sum(np.logical_or(col==-1,col==1)) 
+                         for col in data.T])
     elif order==2:
         pairsP = []
         for i in xrange(n-1):
@@ -409,7 +409,7 @@ def calc_sisj(data,weighted=None,concat=False, excludeEmpty=False):
             for j in xrange(i+1,N):
                 sisj[k] = np.nansum(data[:,i]*data[:,j]*weighted) / np.nansum(weighted)
                 k+=1
-        si = np.nansum(data*weighted[:,None]) / np.nansum(weighted)
+        si = np.nansum(data*weighted[:,None],0) / np.nansum(weighted,0)
 
     if concat:
         return np.concatenate((si,sisj))

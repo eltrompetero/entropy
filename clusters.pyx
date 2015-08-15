@@ -20,3 +20,4 @@ def triplets_probabilities( np.ndarray[dtype=np.float_t,ndim=2] v ):
         tripletsP.append(np.array([ np.sum(np.sum(v[:,triplet]==state[None,:],1)==3) 
                                  for state in binStates ])/np.sum(ix))
     return np.array(tripletsP)
+
