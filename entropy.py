@@ -6,6 +6,28 @@ from __future__ import division
 import numpy as np
 import clusters as cluster
 
+def convert_params(h,J,convertTo='01'):
+    """
+        Convert parameters from 0,1 formulation to +/-1 and vice versa.
+    2014-05-12
+    """
+    if len(J.shape)!=2:
+        Jmat = squareform(J)
+    else:
+        Jmat = J
+        J = squareform(J)
+    
+    if convertTo=='11':
+        # Convert from 0,1 to -/+1
+        Jp = J/4.
+        hp = h/2 + np.sum(Jmat,1)/4.
+    elif convertTo=='01':
+        # Convert from -/+1 to 0,1
+        hp = 2.*(h - np.sum(Jmat,1))
+        Jp = J*4.
+    return hp,Jp
+
+
 def cluster_probabilities(data,order):
     """
     Return probability distributions for subsets of system of binary variables. Given data should be in {-1,1} format where 0's are ignored in computation as non-votes (aren't included in computation of probabilities at all.
