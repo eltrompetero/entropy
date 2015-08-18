@@ -397,6 +397,7 @@ def calc_sisj(data,weighted=None,concat=False, excludeEmpty=False):
         weighted = np.ones((data.shape[0]))
 
     if excludeEmpty:
+        assert np.array_equal( np.unique(data)[:2],np.array([-1,1]) ), "Only handles -1,1 data sets."
         k=0
         for i in xrange(N-1):
             for j in xrange(i+1,N):
