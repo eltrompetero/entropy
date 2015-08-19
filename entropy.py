@@ -8,8 +8,20 @@ import clusters as cluster
 
 def convert_params(h,J,convertTo='01'):
     """
-        Convert parameters from 0,1 formulation to +/-1 and vice versa.
+    Convert parameters from 0,1 formulation to +/-1 and vice versa.
     2014-05-12
+
+    Params:
+    -------
+    h (ndarray)
+    J (ndarray)
+    convertTo (str)
+        '01' or '11'
+
+    Value:
+    ------
+    h (ndarray)
+    J (ndarray)
     """
     if len(J.shape)!=2:
         Jmat = squareform(J)
@@ -442,17 +454,20 @@ def calc_sisj(data,weighted=None,concat=False, excludeEmpty=False):
 
 def calc_cij(data,weighted=None,return_square=False):
     """
-        Each sample state along a row.
+    Each sample state along a row.
 
-        *kwargs:
-        weighted (np.ndarray,None) : 
-        Calculate single and pairwise means given fractional weights for each state in
-        the data such that a state only appears with some weight, typically less than
-        one
-        return_square (bool,False) : return Cij matrix with means along diagonal
+    Params:
+    -------
+    data (ndarray)
+    *kwargs:
+    weighted (np.ndarray,None) : 
+    Calculate single and pairwise means given fractional weights for each state in
+    the data such that a state only appears with some weight, typically less than
+    one
+    return_square (bool,False) : return Cij matrix with variances
 
-        Value:
-            (cij,cijMat) : duplet of singlet and dubplet means
+    Value:
+        (cij,cijMat) : duplet of singlet and dubplet means
     2014-05-25
     """
     (S,N) = data.shape
