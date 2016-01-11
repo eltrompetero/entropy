@@ -88,8 +88,8 @@ def MI(pmat):
     mi = []
     p1 = np.sum(pmat,1)
     p2 = np.sum(pmat,0)
-    for i in range(pmat.shape[0]):
-        for j in range(pmat.shape[0]):
+    for i in xrange(pmat.shape[0]):
+        for j in xrange(pmat.shape[0]):
             mi.append( pmat[i,j]*np.log2( pmat[i,j]/(p1[i]*p2[j]) ) )
     return np.nansum( mi )
 
@@ -513,17 +513,18 @@ def nan_calc_sisj(data):
 
 def get_state_probs(v,allstates=None,weights=None,normalized=True):
     """
-        Get probability of states given in {0,1} representation. There is an option to
-        allow for weights counting of the words.
+        Get probability of unique states. There is an option to allow for weights counting of the words.
         
         def get_state_probs(v,allstates=None,weights=None):
         Args : 
+            states (ndarray nsamples x ndim)
+            weights (vector)
+            normalized (bool=True)
+                Return probability distribution instead of frequency count
         Val:
             freq (ndarray) : vector of the probabilities of each state
     2014-05-26
     """
-    if not (np.array_equal( np.unique(v),np.array([0,1]) ) or np.all(v==0) or np.all(v==1)):
-        raise Exception("Given data array must be in {0,1} representation.")
     from misc_fcns import unique_rows
 
     n = v.shape[1]
@@ -538,8 +539,8 @@ def get_state_probs(v,allstates=None,weights=None,normalized=True):
 
         freq = np.zeros(allstates.shape[0])
         for vote in allstates:
-            ix = np.sum( vote==v,1 )==n
-            freq[j] = np.sum(ix*weights)
+            ix = ( vote==v ).sum(1)==n
+            freq[j] = (ix*weights).sum()
             j+=1
         if np.isclose(np.sum(freq),np.sum(weights))==0:
             import warnings

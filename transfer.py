@@ -53,6 +53,85 @@ class TransferEntropy(object):
         Transfer entropy from x->y 
         Using histogram binning for unidimensional data and k-means clustering for k-dimensional data where input data points are a set of points from a trajectory.
 
+        Compute n step transfer entropy by summing the entropies when the transfer entropy is rewritten.
+
+        Note:
+        Random seeds with k-means clustering might affect the computed results. Good idea to try several iterations or many different k-means seeds.
+
+        2015-12-23
+
+        Params:
+        x
+            (n_samples,n_dim)
+        y
+        kPast (int)
+            k steps into the past
+        kPastOther (int)
+            k steps into the past for other trajectory that we're conditioning on 
+        kFuture(int)
+            k steps into the future
+        [binsPast,binsOtherPast,binsFuture] (list of ints)
+            number of bins (or clusters) for trajectories
+        returnProbabilities (False, bool)
+        """
+        kPastMx = max([kPast,kPastOther])
+
+        transferEntropy = 0.
+
+        # Construct matrix of data points (i_{n+1},i_n,j_n) where i and j are vectors.
+        future = np.zeros((x.shape[0]-kPastMx-kFuture+1,kFuture))
+        past = np.zeros((x.shape[0]-kPastMx-kFuture+1,kPast))
+        otherPast = np.zeros((x.shape[0]-kPastMx-kFuture+1,kPastOther))
+        for i in xrange(future.shape[0]):
+            future[i,:] = y[(i+kPastMx):(i+kPastMx+kFuture)]
+            past[i,:] = y[(i+kPastMx-kPast):(i+kPastMx)]
+            otherPast[i,:] = x[(i+kPastMx-kPastOther):(i+kPastMx)]
+
+        discreteFuture = self.digitize_vector_or_scalar( future,bins[2] )
+        discretePast = self.digitize_vector_or_scalar( past,bins[0] )
+        discreteOtherPast = self.digitize_vector_or_scalar( otherPast,bins[1] )
+
+        # Marginal distributions.
+        # Compute p(i_{n+1},i_n,j_n)
+        xy = np.c_[(discreteFuture,discretePast,discreteOtherPast)]  # data as row vectors arranged into matrix
+        uniqxy = xy[unique_rows(xy)]  # unique entries in data that will be assigned probabilities using kernel
+        pXXkY = np.zeros((uniqxy.shape[0]))
+        for i,row in enumerate(uniqxy):
+            pXXkY[i] = np.sum( np.prod(row[None,:]==xy,1) )
+        pXXkY /= np.sum(pXXkY)
+
+        Xk = np.bincount(discretePast)
+        pXk = Xk / np.sum(Xk)
+
+        YXk = np.c_[(discretePast,discreteOtherPast)]
+        uniqYXk = YXk[unique_rows(YXk)]
+        pYXk = np.zeros((uniqYXk.shape[0]))
+        for i,r in enumerate(uniqYXk):
+            pYXk[i] = np.sum( np.prod(r[None,:]==YXk,1) )
+        pYXk = pYXk / np.sum(pYXk)
+
+        XXk = np.c_[(discreteFuture,discretePast)]
+        uniqXXk = XXk[unique_rows(XXk)]
+        pXXk = np.zeros((uniqXXk.shape[0]))
+        for i,r in enumerate(uniqXXk):
+            pXXk[i] = np.sum( np.prod(r[None,:]==XXk,1) )
+        pXXk = pXXk / np.sum(pXXk)
+
+        transferEntropy = ( np.nansum( pXXkY*np.log2(pXXkY) ) + np.nansum( pXk*np.log2(pXk) ) 
+                           -np.nansum( pYXk*np.log2(pYXk) ) - np.nansum( pXXk*np.log2(pXXk) ) )
+
+        if returnProbabilities:
+            return transferEntropy,pijk,piCondij,piCondi
+        return transferEntropy
+
+    def _n_step_transfer_entropy( self, x, y,
+                                 kPast=1, kPastOther=1, kFuture=1,
+                                 bins=[10,10,10],
+                                 returnProbabilities=False):
+        """
+        Transfer entropy from x->y 
+        Using histogram binning for unidimensional data and k-means clustering for k-dimensional data where input data points are a set of points from a trajectory.
+
         We compute the empirical distribution p(i_{n+1},i_n,j_n) and marginalize over this to get the conditional probabilities required for transfer entropy calculation.
 
         Note:
@@ -169,7 +248,7 @@ class TransferEntropy(object):
         piCondij = np.array(piCondijStore[:])
         piCondi = np.array(piCondiStore[:])
 
-        transferEntropy = np.nansum( pijk * np.log2( piCondij/piCondi ) )
+        transferEntropy = np.nansum( pijk * (np.log2( piCondij ) - np.log2( piCondi )) )
         if returnProbabilities:
             return transferEntropy,pijk,piCondij,piCondi
         return transferEntropy
