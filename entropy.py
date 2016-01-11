@@ -446,9 +446,9 @@ def calc_sisj(data,weighted=None,concat=False, excludeEmpty=False):
         k=0
         for i in xrange(N-1):
             for j in xrange(i+1,N):
-                sisj[k] = np.nansum(data[:,i]*data[:,j]*weighted) / np.nansum(weighted)
+                sisj[k] = np.nansum(data[:,i]*data[:,j]*weighted)
                 k+=1
-        si = np.nansum(data*weighted[:,None],0) / np.nansum(weighted,0)
+        si = np.nansum(data*weighted[:,None],0)
 
     if concat:
         return np.concatenate((si,sisj))
