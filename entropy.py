@@ -82,14 +82,11 @@ def MI(pmat):
     pmat (ndarray)
         2D array
     """
-    if pmat.shape[0]!=pmat.shape[1]:
-        raise Exception("Given probability matrix is not square.")
-    
     mi = []
     p1 = np.sum(pmat,1)
     p2 = np.sum(pmat,0)
     for i in xrange(pmat.shape[0]):
-        for j in xrange(pmat.shape[0]):
+        for j in xrange(pmat.shape[1]):
             mi.append( pmat[i,j]*np.log2( pmat[i,j]/(p1[i]*p2[j]) ) )
     return np.nansum( mi )
 
@@ -431,7 +428,7 @@ def calc_sisj(data,weighted=None,concat=False, excludeEmpty=False):
     sisj = np.zeros(N*(N-1)/2)
     
     if weighted is None:
-        weighted = np.ones((data.shape[0]))
+        weighted = np.ones((data.shape[0]))/data.shape[0]
 
     if excludeEmpty:
         assert np.array_equal( np.unique(data),np.array([-1,0,1]) ) or \
