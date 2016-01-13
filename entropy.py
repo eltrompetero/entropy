@@ -5,6 +5,7 @@
 from __future__ import division
 import numpy as np
 import clusters as cluster
+from numba import jit
 
 def convert_params(h,J,convertTo='01',concat=False):
     """
@@ -72,6 +73,7 @@ def cluster_probabilities(data,order):
         return clusters.triplets_probabilities(data.astype(np.float64))
     return
 
+@jit(nopython=True)
 def MI(pmat):
     """
     Calculate mutual information between the joint probability distributions in bits.
@@ -82,12 +84,20 @@ def MI(pmat):
     pmat (ndarray)
         2D array
     """
-    mi = []
+    mi = np.zeros((pmat.size))
     p1 = np.sum(pmat,1)
     p2 = np.sum(pmat,0)
+
+    if (p1==0).any():
+        return np.nan
+    if (p2==0).any():
+        return np.nan
+    
+    k = 0
     for i in xrange(pmat.shape[0]):
         for j in xrange(pmat.shape[1]):
-            mi.append( pmat[i,j]*np.log2( pmat[i,j]/(p1[i]*p2[j]) ) )
+            mi[k] = pmat[i,j]*np.log2( pmat[i,j]/(p1[i]*p2[j]) )
+            k += 1
     return np.nansum( mi )
 
 def find_state_ix(data,states):
