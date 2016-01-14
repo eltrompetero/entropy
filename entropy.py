@@ -8,7 +8,31 @@ import clusters as cluster
 from numba import jit
 from misc.utils import unique_rows
 
-@jit
+@jit(cache=True)
+def bootstrap_MI(data,ix1,ix2,nIters,sampleFraction=1.):
+    """
+    Use joint_p_mat with bootstrap samples of data to generate error bars on MI.
+    2016-01-13
+
+    Params:
+    -------
+    data (ndarray ndata x ndim)
+    ix1 (list)
+    ix2 (list)
+    nIters (int)
+        Number of times to bootstrap
+    sampleFraction (float=1)
+        fraction of data to sample
+    """
+    miSamples = np.zeros((nIters))
+
+    for i in xrange(nIters):
+        samples = data[np.random.randint(len(data),size=int(sampleFraction*len(data)))]
+        p = joint_p_mat(samples,ix1,ix2)
+        miSamples[i] = MI(p)
+    return miSamples
+
+@jit(cache=True)
 def joint_p_mat(data,ix1,ix2):
     """
     Return joint probability matrix between different groups of columns of a data matrix.
@@ -114,8 +138,8 @@ def MI(pmat):
         2D array
     """
     mi = np.zeros((pmat.size))
-    p1 = np.sum(pmat,1)
-    p2 = np.sum(pmat,0)
+    p1 = pmat.sum(1)
+    p2 = pmat.sum(0)
 
     if (p1==0).any():
         return np.nan
@@ -125,7 +149,11 @@ def MI(pmat):
     k = 0
     for i in xrange(pmat.shape[0]):
         for j in xrange(pmat.shape[1]):
-            mi[k] = pmat[i,j]*np.log2( pmat[i,j]/(p1[i]*p2[j]) )
+            if pmat[i,j]==0:
+                mi[k] = 0 
+            else:
+                pass
+                mi[k] = pmat[i,j]*np.log2( pmat[i,j]/(p1[i]*p2[j]) )
             k += 1
     return np.nansum( mi )
 
