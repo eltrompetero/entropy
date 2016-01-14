@@ -6,6 +6,35 @@ from __future__ import division
 import numpy as np
 import clusters as cluster
 from numba import jit
+from misc.utils import unique_rows
+
+@jit
+def joint_p_mat(data,ix1,ix2):
+    """
+    Return joint probability matrix between different groups of columns of a data matrix.
+    2016-01-12
+    
+    Params:
+    -------
+    data (ndarray ndata x ndim)
+    ix1,ix2 (vector)
+        Index of columns that correspond to groups of columns to compare.
+    """
+    assert len(ix1)>=1 and len(ix2)>=1
+    
+    data1 = data[:,ix1]
+    data2 = data[:,ix2]
+
+    uniq1 = data1[unique_rows(data1)]
+    uniq2 = data2[unique_rows(data2)]
+    
+    p = np.zeros((len(uniq1),len(uniq2)))
+
+    for row,i in enumerate(uniq1):
+        for col,j in enumerate(uniq2):
+            p[row,col] = np.logical_and( (data[:,ix1]==i[None,:]).all(1),
+                                     (data[:,ix2]==j[None,:]).all(1) ).sum()
+    return p / p.sum()
 
 def convert_params(h,J,convertTo='01',concat=False):
     """
@@ -73,7 +102,7 @@ def cluster_probabilities(data,order):
         return clusters.triplets_probabilities(data.astype(np.float64))
     return
 
-@jit(nopython=True)
+#@jit(nopython=True)
 def MI(pmat):
     """
     Calculate mutual information between the joint probability distributions in bits.
