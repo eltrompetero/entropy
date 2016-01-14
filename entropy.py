@@ -7,8 +7,8 @@ import numpy as np
 import clusters as cluster
 from numba import jit
 from misc.utils import unique_rows
-
 from numba import float64
+
 @jit(cache=True)
 def bootstrap_MI(data,ix1,ix2,nIters,sampleFraction=1.):
     """
@@ -813,7 +813,7 @@ def calc_nth_correl(data,n,weighted=False,vecout=True):
                 data[:,i[0]]*data[:,i[1]]*data[:,i[2]]))
     return s
 
-def convert_sisj(sisj,si,convertTo='11'):
+def convert_sisj(si,sisj,convertTo='11'):
     """
     Convert <sisj> between 01 and 11 formulations.
     2015-06-28
@@ -827,6 +827,8 @@ def convert_sisj(sisj,si,convertTo='11'):
 
     Value:
     ------
+    si
+        Converted to appropriate basis
     sisj
         converted to appropriate basis
     """
@@ -837,6 +839,7 @@ def convert_sisj(sisj,si,convertTo='11'):
             for j in range(i+1,len(si)):
                 newsisj[k] = 4*sisj[k] - 2*si[i] - 2*si[j] + 1
                 k += 1
+        newsi = si*2-1
     else:
         newsisj = np.zeros(sisj.shape)
         k = 0
@@ -844,5 +847,6 @@ def convert_sisj(sisj,si,convertTo='11'):
             for j in range(i+1,len(si)):
                 newsisj[k] = ( sisj[k] + si[i] + si[j] + 1 )/4.
                 k += 1
-    return newsisj
+        newsi = (si+1)/2
+    return newsi,newsisj
 
