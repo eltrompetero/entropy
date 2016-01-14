@@ -8,6 +8,7 @@ import clusters as cluster
 from numba import jit
 from misc.utils import unique_rows
 
+from numba import float64
 @jit(cache=True)
 def bootstrap_MI(data,ix1,ix2,nIters,sampleFraction=1.):
     """
@@ -126,7 +127,7 @@ def cluster_probabilities(data,order):
         return clusters.triplets_probabilities(data.astype(np.float64))
     return
 
-#@jit(nopython=True)
+@jit( float64(float64[:,:]) )
 def MI(pmat):
     """
     Calculate mutual information between the joint probability distributions in bits.
@@ -152,10 +153,9 @@ def MI(pmat):
             if pmat[i,j]==0:
                 mi[k] = 0 
             else:
-                pass
                 mi[k] = pmat[i,j]*np.log2( pmat[i,j]/(p1[i]*p2[j]) )
             k += 1
-    return np.nansum( mi )
+    return np.nansum(mi)
 
 def find_state_ix(data,states):
     """
