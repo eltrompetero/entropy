@@ -9,6 +9,13 @@ from numba import jit
 from misc.utils import unique_rows
 from numba import float64
 
+def enumerate_states(x):
+    """
+    Given data array x, assign a unique integer label to each row.
+    2016-03-25
+    """
+    return unique_rows(x,return_inverse=True)
+
 @jit(cache=True)
 def bootstrap_MI(data,ix1,ix2,nIters,sampleFraction=1.):
     """
@@ -36,7 +43,7 @@ def bootstrap_MI(data,ix1,ix2,nIters,sampleFraction=1.):
 @jit(cache=True)
 def joint_p_mat(data,ix1,ix2):
     """
-    Return joint probability matrix between different groups of columns of a data matrix.
+    Return joint probability matrix between different groups of columns of a data matrix. Works on any type of data that can be identified separately by misc.utils.unique_rows().
     2016-01-12
     
     Params:
