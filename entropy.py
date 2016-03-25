@@ -40,7 +40,7 @@ def bootstrap_MI(data,ix1,ix2,nIters,sampleFraction=1.):
         miSamples[i] = MI(p)
     return miSamples
 
-@jit(cache=True)
+@jit(nopython=True,cache=True)
 def joint_p_mat(data,ix1,ix2):
     """
     Return joint probability matrix between different groups of columns of a data matrix. Works on any type of data that can be identified separately by misc.utils.unique_rows().
@@ -134,7 +134,7 @@ def cluster_probabilities(data,order):
         return clusters.triplets_probabilities(data.astype(np.float64))
     return
 
-@jit( float64(float64[:,:]) )
+@jit( float64(float64[:,:]),nopython=True )
 def MI(pmat):
     """
     Calculate mutual information between the joint probability distributions in bits.
@@ -582,32 +582,34 @@ def nan_calc_sisj(data):
 
     return ( np.nansum(data,0)/np.sum(np.isnan(data)==0,0), sisj )
 
+@jit(nopython=True)
 def get_state_probs(v,allstates=None,weights=None,normalized=True):
     """
-        Get probability of unique states. There is an option to allow for weights counting of the words.
-        
-        def get_state_probs(v,allstates=None,weights=None):
-        Args : 
-            states (ndarray nsamples x ndim)
-            weights (vector)
-            normalized (bool=True)
-                Return probability distribution instead of frequency count
-        Val:
-            freq (ndarray) : vector of the probabilities of each state
+    Get probability of unique states. There is an option to allow for weights counting of the words.
     2014-05-26
-    """
-    from misc_fcns import unique_rows
+    
+    Params:
+    -------
+    states (ndarray nsamples x ndim)
+    weights (vector)
+    normalized (bool=True)
+        Return probability distribution instead of frequency count
 
+    Value:
+    ------
+    freq (ndarray) : vector of the probabilities of each state
+    """
     n = v.shape[1]
     j=0
 
     if allstates is None:
         allstates = unique_rows(v,return_inverse=True)
-        freq,x = np.histogram( allstates,range(allstates.max()+2) )
+        freq = np.bincount( allstates )
+        x = range(len(freq))
     else:
         if weights is None:
             weights = np.ones((v.shape[0]))
-
+        
         freq = np.zeros(allstates.shape[0])
         for vote in allstates:
             ix = ( vote==v ).sum(1)==n
