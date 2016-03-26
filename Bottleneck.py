@@ -13,17 +13,17 @@ def L(PofCgivenI,T,Nc,v,iprint=False):
     """
     K = v.shape[0]
     avgVote = v.sum(1)
-    avgVote[np.isclose(avgVote,0)] = 0
+    avgVote[np.isclose(avgVote,0)] = 0.
     avgVote = np.sign(avgVote)
 
     # For each cluster, compute the information it has about the average outcome.
     clustersVote = np.zeros((K,Nc))
     for i in xrange(Nc):
         clustersVote[:,i] = (PofCgivenI[:,i][None,:]*v).sum(1)
-    clustersVote[np.isclose(clustersVote,0)] = 0
+    clustersVote[np.isclose(clustersVote,0)] = 0.
     clustersVote = np.sign(clustersVote)
     
-    pmat = joint_p_mat( np.vstack(( enumerate_states(clustersVote),avgVote )).T,[0],[1] )
+    pmat = joint_p_mat( np.vstack(( enumerate_states(clustersVote),avgVote )).T,np.array([0]),np.array([1]) )
     info = MI(pmat)
     cost = Snaive(clustersVote)
     

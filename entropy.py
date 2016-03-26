@@ -40,7 +40,7 @@ def bootstrap_MI(data,ix1,ix2,nIters,sampleFraction=1.):
         miSamples[i] = MI(p)
     return miSamples
 
-@jit(nopython=True,cache=True)
+@jit
 def joint_p_mat(data,ix1,ix2):
     """
     Return joint probability matrix between different groups of columns of a data matrix. Works on any type of data that can be identified separately by misc.utils.unique_rows().
@@ -66,7 +66,8 @@ def joint_p_mat(data,ix1,ix2):
         for col,j in enumerate(uniq2):
             p[row,col] = np.logical_and( (data[:,ix1]==i[None,:]).all(1),
                                      (data[:,ix2]==j[None,:]).all(1) ).sum()
-    return p / p.sum()
+    p = p / p.sum()
+    return p
 
 def convert_params(h,J,convertTo='01',concat=False):
     """
@@ -134,7 +135,7 @@ def cluster_probabilities(data,order):
         return clusters.triplets_probabilities(data.astype(np.float64))
     return
 
-@jit( nopython=True )
+@jit
 def MI(pmat):
     """
     Calculate mutual information between the joint probability distributions in bits.
@@ -582,7 +583,6 @@ def nan_calc_sisj(data):
 
     return ( np.nansum(data,0)/np.sum(np.isnan(data)==0,0), sisj )
 
-@jit(nopython=True)
 def get_state_probs(v,allstates=None,weights=None,normalized=True):
     """
     Get probability of unique states. There is an option to allow for weights counting of the words.
