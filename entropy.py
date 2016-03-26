@@ -134,7 +134,7 @@ def cluster_probabilities(data,order):
         return clusters.triplets_probabilities(data.astype(np.float64))
     return
 
-@jit( float64(float64[:,:]),nopython=True )
+@jit( nopython=True )
 def MI(pmat):
     """
     Calculate mutual information between the joint probability distributions in bits.
