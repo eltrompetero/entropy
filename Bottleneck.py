@@ -58,12 +58,16 @@ def solve(T,Nc,v,maxTries=100,method='minimize',rng=np.random.RandomState()):
     return 0
 
 def solve_parallel(nSolns,T,Nc,v,nJobs=None,**kwargs):
+    """
+    Run solve() in parallel
+    """
     if nJobs is None:
         nJobs = cpu_count()
     assert nJobs>0
    
     def wrapped_solve(i):
-        return solve(T,Nc,v,**kwargs)
+        rng = np.random.RandomState()
+        return solve(T,Nc,v,rng=rng,**kwargs)
 
     p = Pool(nJobs)
     Solutions = p.map(wrapped_solve,range(nSolns))
@@ -71,5 +75,22 @@ def solve_parallel(nSolns,T,Nc,v,nJobs=None,**kwargs):
     return Solutions
 
 def get_best(Solutions,n):
+    """
+    Get best solutions as given by the energy function you're trying to minimize. This is useful when there are a lot of solutions with many bad ones.
+    """
     ix = np.argsort([s['fun'] for s in Solutions])
     return [Solutions[i] for i in ix[:n]]
+
+def hard_clusters(clusterIx,v):
+    """
+    Put voters into most likely clusters and return majority votes of those clusters.
+    2016-03-29
+    """
+    n_clusters = len(np.unique(clusterIx))
+    clustersVote = np.zeros((v.shape[0],n_clusters))
+    
+    for i,ix in enumerate(np.unique(clusterIx)):
+        clustersVote[:,i] = v[:,np.where(clusterIx==ix)[0]].sum(1)
+    clustersVote[np.isclose(clustersVote,0)] = 0
+    clustersVote = np.sign(clustersVote)
+    return clustersVote

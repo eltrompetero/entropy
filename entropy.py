@@ -4,7 +4,7 @@
 
 from __future__ import division
 import numpy as np
-import clusters as cluster
+#import clusters as cluster
 from numba import jit
 from misc.utils import unique_rows
 from numba import float64
