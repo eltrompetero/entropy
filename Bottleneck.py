@@ -18,12 +18,17 @@ class Bottleneck(object):
         --------
         chi
         calc_Delta
+        setup
+            Setup methods for solving.
+        solve
+
         """
         self.N = N
         self.Nc = Nc
         self.gamma = 1  # penalty tradeoff
         self.beta = 10  # inverse temperature for soft spins
-    
+        self.hasBeenSetup = False
+
     def calc_P_sc(self,clusterAssignP,PofSi,Si,Sc):
         """
         P({s_C}) for a particular {s_C} 
@@ -131,6 +136,9 @@ class Bottleneck(object):
         return MI( P_sc_and_S )
     
     def setup(self,PSi,Si,Sc):
+        """
+        2016-04-15
+        """
         beta = self.beta
         
         @jit(nopython=True)
@@ -147,12 +155,12 @@ class Bottleneck(object):
         def L(params,returnSeparate=False):
             if np.any(params<=0):
                 return np.inf
-
+            
             clusterAssignP = self.reshape_and_norm(params)
-
+            
             # Calculate the first term. I(Sigma_i,Sigma_C)
             bottleneck = self.bottleneck_term( clusterAssignP,PSi,Si,Sc )
-
+                
             # Calculate second term: I(Sigma_C;Sigma)
             accuracy = self.accuracy_term( clusterAssignP,PSi,Si )
             
@@ -161,11 +169,14 @@ class Bottleneck(object):
                 return bottleneck, accuracy
             return self.gamma * bottleneck - accuracy
         self.L = L
+        self.hasBeenSetup = True
         
     def solve(self,method='fmin'):
         """
         2016-04-15
         """
+        assert self.hasBeenSetup, "Must run setup() first."
+
         if method=='fmin':
             self.soln = self.reshape_and_norm( fmin(self.L,np.random.rand(self.Nc*self.N)) )
             self.clusterAssignP = self.reshape_and_norm( self.soln )
