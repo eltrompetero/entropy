@@ -185,18 +185,19 @@ class Bottleneck(object):
         self.L = L
         self.hasBeenSetup = True
         
-    def solve(self,method='fmin'):
+    def solve(self,initialGuess=None,method='fmin'):
         """
         2016-04-15
         """
         assert self.hasBeenSetup, "Must run setup() first."
-
+        if initialGuess is None:
+            initialGuess = np.random.rand(self.Nc*self.N))
+        
         if method=='fmin':
-            self.soln = self.reshape_and_norm( fmin(self.L,np.random.rand(self.Nc*self.N)) )
+            self.soln = self.reshape_and_norm( fmin(self.L,initialGuess )
             self.clusterAssignP = self.reshape_and_norm( self.soln )
         else: 
-            self.soln = minimize(self.L, np.random.rand(self.Nc*self.N),
-                                 method=method)
+            self.soln = minimize(self.L, initialGuess, method=method)
             self.clusterAssignP = self.reshape_and_norm( self.soln['x'] )
         
         self.bottleneck,self.accuracy = self.L( self.clusterAssignP.ravel(),True )
