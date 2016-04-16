@@ -384,7 +384,7 @@ def xbin_states(n,sym=False):
     assert n>0, "n cannot be <0"
     
     def v():
-        for i in range(2**n):
+        for i in xrange(2**n):
             if sym is False:
                 yield np.array(list(np.binary_repr(i,width=n))).astype('int')
             else:
