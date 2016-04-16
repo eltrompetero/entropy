@@ -37,7 +37,7 @@ class Bottleneck(object):
         self.gamma = 1  # penalty tradeoff
         self.beta = 10  # inverse temperature for soft spins
         self.hasBeenSetup = False
-        self.rng = self.rng.RandomState()
+        self.rng = np.random.RandomState()
 
     def calc_P_sc(self,clusterAssignP,PofSi,Si,Sc):
         """
@@ -86,7 +86,6 @@ class Bottleneck(object):
             Delta *= self.calc_Delta( clusterAssignP[j],sc[j],si )
         return Delta
 
-        
     def calc_P_sc_and_S(self,clusterAssignProbs,PofSi,Si,Sc=None):
         """
         Calculate matrix of P({s_C}|{s_i},S) of all possible states {s_C} given some data {s_i}. This means that I should iterate overall the observed states {s_i} and compute the probabilities of possible states {s_C}.
