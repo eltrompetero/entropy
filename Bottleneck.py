@@ -31,13 +31,13 @@ class Bottleneck(object):
         setup
             Setup methods for solving.
         solve
-
         """
         self.N = N
         self.Nc = Nc
         self.gamma = 1  # penalty tradeoff
         self.beta = 10  # inverse temperature for soft spins
         self.hasBeenSetup = False
+        self.rng = self.rng.RandomState()
 
     def calc_P_sc(self,clusterAssignP,PofSi,Si,Sc):
         """
@@ -201,7 +201,7 @@ class Bottleneck(object):
         """
         assert self.hasBeenSetup, "Must run setup() first."
         if initialGuess is None:
-            initialGuess = np.random.rand(self.Nc*self.N)
+            initialGuess = self.rng.rand(self.Nc*self.N)
         
         if method=='fmin':
             self.soln = self.reshape_and_norm( fmin(self.L,initialGuess) )
