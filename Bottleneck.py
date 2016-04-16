@@ -9,15 +9,25 @@ from numba import jit
 class Bottleneck(object):
     def __init__(self,N,Nc):
         """
+        Class for implementing minimization routine for Information Bottleneck soft clustering for soft votes.
         2016-04-15
         
         Subfields:
         ----------
-        
+        accuracy (float)
+            Accuracy term in cost function L
+        bottleneck (float)
+            Bottleneck term in cost function L
+        clusterAssignP (ndarray)
+            n_clusters x n_spins, cluster assignment probabilties
+
         Methods:
         --------
-        chi
         calc_Delta
+        calc_P_sc
+        calc_P_sc_given_si
+        calc_P_sc_and_S
+        chi
         setup
             Setup methods for solving.
         solve
