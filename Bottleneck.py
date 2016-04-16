@@ -191,10 +191,10 @@ class Bottleneck(object):
         """
         assert self.hasBeenSetup, "Must run setup() first."
         if initialGuess is None:
-            initialGuess = np.random.rand(self.Nc*self.N))
+            initialGuess = np.random.rand(self.Nc*self.N)
         
         if method=='fmin':
-            self.soln = self.reshape_and_norm( fmin(self.L,initialGuess )
+            self.soln = self.reshape_and_norm( fmin(self.L,initialGuess) )
             self.clusterAssignP = self.reshape_and_norm( self.soln )
         else: 
             self.soln = minimize(self.L, initialGuess, method=method)
