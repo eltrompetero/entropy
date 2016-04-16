@@ -142,7 +142,7 @@ class Bottleneck(object):
         H = -np.nansum(P_sc*np.log2(P_sc))
         return H
 
-    def accuracy_term( self,clusterAssignP,PofSi,Si,Sc=None ):
+    def accuracy_term( self,clusterAssignP,PofSi,Si,Sc ):
         """
         Information between cluster votes and final vote.
         """
@@ -176,7 +176,7 @@ class Bottleneck(object):
             bottleneck = self.bottleneck_term( clusterAssignP,PSi,Si,Sc=Sc )
                 
             # Calculate second term: I(Sigma_C;Sigma)
-            accuracy = self.accuracy_term( clusterAssignP,PSi,Si,Sc=Sc )
+            accuracy = self.accuracy_term( clusterAssignP,PSi,Si,Sc )
             
             # Min the entropy of the code while max overlap with final vote outcome.
             if returnSeparate:
