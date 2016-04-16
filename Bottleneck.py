@@ -117,25 +117,39 @@ class Bottleneck(object):
         P_sc_S = Psc
         return P_sc_S
         
-    def bottleneck_term(self,clusterAssignP,PSi,Si,Sc):
-        # Calculate the first term. I(Sigma_i,Sigma_C)
-        P_sc = np.zeros((2**self.Nc))
+    def bottleneck_term(self,clusterAssignP,PSi,Si,Sc=None):
+        """
+        Calculate the first term. I(Sigma_i,Sigma_C)
+        2016-04-15
+        """
+        # If Sc is not given, then consider all possible 2**Nc cluster states.
+        if Sc is None:
+            def refresh_ScGen():
+                return xbin_states(self.Nc,sym=True)
+            ScGen = refresh_ScGen()
+            P_sc = np.zeros((2**self.Nc))
+        else:
+            def refresh_ScGen():
+                return iter(Sc)
+            ScGen = refresh_ScGen()
+            P_sc = np.zeros((len(Sc)))
+        
         # Iterate over all cluster orientations possible.
-        for i,Sc in enumerate(xbin_states(self.Nc,sym=True)):
+        for i,Sc in enumerate(ScGen):
             # Given a particular cluster orientation, sum over all data that is consistent with this.
             P_sc[i] = self.calc_P_sc( clusterAssignP,PSi,Si,Sc )
         
         H = -np.nansum(P_sc*np.log2(P_sc))
         return H
 
-    def accuracy_term( self,clusterAssignP,PofSi,Si ):
+    def accuracy_term( self,clusterAssignP,PofSi,Si,Sc=None ):
         """
         Information between cluster votes and final vote.
         """
-        P_sc_and_S = self.calc_P_sc_and_S( clusterAssignP,PofSi,Si )
+        P_sc_and_S = self.calc_P_sc_and_S( clusterAssignP,PofSi,Si,Sc=Sc )
         return MI( P_sc_and_S )
     
-    def setup(self,PSi,Si,Sc):
+    def setup(self,PSi,Si,Sc=None):
         """
         2016-04-15
         """
@@ -159,10 +173,10 @@ class Bottleneck(object):
             clusterAssignP = self.reshape_and_norm(params)
             
             # Calculate the first term. I(Sigma_i,Sigma_C)
-            bottleneck = self.bottleneck_term( clusterAssignP,PSi,Si,Sc )
+            bottleneck = self.bottleneck_term( clusterAssignP,PSi,Si,Sc=Sc )
                 
             # Calculate second term: I(Sigma_C;Sigma)
-            accuracy = self.accuracy_term( clusterAssignP,PSi,Si )
+            accuracy = self.accuracy_term( clusterAssignP,PSi,Si,Sc=Sc )
             
             # Min the entropy of the code while max overlap with final vote outcome.
             if returnSeparate:
@@ -183,8 +197,6 @@ class Bottleneck(object):
         else: 
             self.soln = minimize(self.L, np.random.rand(self.Nc*self.N),
                                  method=method)
-            print self.soln['message']
-            print self.soln['fun']
             self.clusterAssignP = self.reshape_and_norm( self.soln['x'] )
         
         self.bottleneck,self.accuracy = self.L( self.clusterAssignP.ravel(),True )
