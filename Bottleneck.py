@@ -1,5 +1,5 @@
 from __future__ import division
-from entropy import joint_p_mat,MI,bin_states,calc_cij,joint_p_mat,enumerate_states,Snaive,xbin_states
+from entropy import *
 from scipy.optimize import minimize,fmin
 from pathos.multiprocessing import cpu_count,Pool
 import numpy as np
@@ -195,7 +195,7 @@ class Bottleneck(object):
         self.L = L
         self.hasBeenSetup = True
         
-    def solve(self,initialGuess=None,method='fmin'):
+    def solve(self,initialGuess=None,method='powell'):
         """
         2016-04-15
         """
@@ -218,6 +218,23 @@ class Bottleneck(object):
         x /= x.sum(0)[None,:]
         return x
 
+def unique_states_and_p(v):
+    """
+    Given set of states, return probabilities of unique states and the unique states.
+    2016-04-16
+
+    Params:
+    -------
+    v (ndarray)
+        n_samples x n_spins
+    """
+    # P({s_i}), all observed individual voting configurations
+    PofSi = np.bincount(unique_rows(v,return_inverse=True))
+    PofSi = PofSi/PofSi.sum()
+    
+    # Unique {s_i}
+    uniqueSi = v[unique_rows(v)]
+    return PofSi,uniqueSi
 
 
 
