@@ -58,25 +58,6 @@ class Bottleneck(object):
             P_sc *= self.Deltas[j,int(sc==1),:]
         P_sc *= PofSi
         return P_sc.sum()
-        
-    def calc_P_sc_given_si( self,clusterAssignP,si,sc):
-        """
-        P({s_C}|{s_i})
-        
-        Params:
-        -------
-        PofthisCgiveni (ndarray)
-            n_clusters x n_spins, P(C|i)
-        si (ndarray)
-            n_spins, data to consider
-        Sc (ndarray)
-            n_clusters, fixed vector of cluster orientations (function that loops this function will iterate over these)
-        """
-        Delta = 1.
-        # Iterate over all the states.
-        for j in xrange(len(sc)):
-            Delta *= self.calc_Delta( clusterAssignP[j],sc[j],si )
-        return Delta
 
     def calc_P_sc_and_S(self,PofSi,Si,Sc=None):
         """
