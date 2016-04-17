@@ -121,7 +121,33 @@ class Bottleneck(object):
             P_Sc_and_S[1,j] += dp.sum()
 
         return P_Sc_and_S
+ 
+    def calc_Delta_for_Si( self,clusterAssignPGivenC,si,sc):
+        """
+        Calculate Delta_C for all given microscopic states {s_i} for all given orientations s_C, the vote of C.
         
+        Params:
+        -------
+        clusterAssignPGivenC (ndarray)
+            n_clusters, P(C|i) for this particular C
+        si (ndarray)
+            n_samples x n_spins, microsocopic data state to consider
+        sc (ndarray)
+            cluster states to use
+        
+        Value:
+        ------
+        Return n_clusters x n_spin_states
+        """
+        assert clusterAssignPGivenC.ndim==1 and sc.ndim==1 and si.ndim==2
+        return self.calc_Delta( clusterAssignPGivenC[None,:,None],sc[:,None],
+                                np.swapaxes(si[:,:,None],2,0) )
+    
+    def define_Deltas(self,clusterAssignP,Si):
+        self.Deltas = np.zeros((self.Nc,2,len(Si)))
+        for i in xrange(self.Nc):
+            self.Deltas[i,:,:] = self.calc_Delta_for_Si( clusterAssignP[i],Si,np.array([-1,1]) )
+
     def bottleneck_term(self,PSi,Si,Sc=None):
         """
         Calculate the first term. I(Sigma_i,Sigma_C)
@@ -154,32 +180,6 @@ class Bottleneck(object):
         P_sc_and_S = self.calc_P_sc_and_S( PofSi,Si,Sc=Sc )
         return MI( P_sc_and_S )
     
-    def calc_Delta_for_Si( self,clusterAssignPGivenC,si,sc):
-        """
-        Calculate Delta_C for all given microscopic states {s_i} for all given orientations s_C, the vote of C.
-        
-        Params:
-        -------
-        clusterAssignPGivenC (ndarray)
-            n_clusters, P(C|i) for this particular C
-        si (ndarray)
-            n_samples x n_spins, microsocopic data state to consider
-        sc (ndarray)
-            cluster states to use
-        
-        Value:
-        ------
-        Return n_clusters x n_spin_states
-        """
-        assert clusterAssignPGivenC.ndim==1 and sc.ndim==1 and si.ndim==2
-        return self.calc_Delta( clusterAssignPGivenC[None,:,None],sc[:,None],
-                                np.swapaxes(si[:,:,None],2,0) )
-    
-    def define_Deltas(self,clusterAssignP,Si):
-        self.Deltas = np.zeros((self.Nc,2,len(Si)))
-        for i in xrange(self.Nc):
-            self.Deltas[i,:,:] = self.calc_Delta_for_Si( clusterAssignP[i],Si,np.array([-1,1]) )
-
     def setup(self,PSi,Si,Sc=None):
         """
         2016-04-15
