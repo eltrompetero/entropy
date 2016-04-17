@@ -122,7 +122,7 @@ class Bottleneck(object):
 
         return P_Sc_and_S
         
-    def bottleneck_term(self,clusterAssignP,PSi,Si,Sc=None):
+    def bottleneck_term(self,PSi,Si,Sc=None):
         """
         Calculate the first term. I(Sigma_i,Sigma_C)
         2016-04-17
@@ -147,7 +147,7 @@ class Bottleneck(object):
         H = -np.nansum(P_sc*np.log2(P_sc))
         return H
 
-    def accuracy_term( self,clusterAssignP,PofSi,Si,Sc ):
+    def accuracy_term( self,PofSi,Si,Sc ):
         """
         Information between cluster votes and final vote.
         """
@@ -206,10 +206,10 @@ class Bottleneck(object):
             self.define_Deltas(clusterAssignP,Si)
             
             # Calculate the first term. I(Sigma_i,Sigma_C)
-            bottleneck = self.bottleneck_term( clusterAssignP,PSi,Si,Sc=Sc )
+            bottleneck = self.bottleneck_term( PSi,Si,Sc=Sc )
                 
             # Calculate second term: I(Sigma_C;Sigma)
-            accuracy = self.accuracy_term( clusterAssignP,PSi,Si,Sc )
+            accuracy = self.accuracy_term( PSi,Si,Sc )
             
             # Min the entropy of the code while max overlap with final vote outcome.
             if returnSeparate:
