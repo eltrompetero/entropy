@@ -166,7 +166,7 @@ class Bottleneck(object):
             n_samples x n_spins, microsocopic data state to consider
         sc (ndarray)
             cluster states to use
-
+        
         Value:
         ------
         Return n_clusters x n_spin_states
