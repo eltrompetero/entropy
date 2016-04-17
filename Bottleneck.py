@@ -52,7 +52,7 @@ class Bottleneck(object):
         Sc (ndarray)
             n_clusters, fixed vector of cluster orientations (function that loops this function will iterate over these)
         """
-        P_sc = np.zeros((len(PofSi)))
+        P_sc = np.ones((len(PofSi)))
         # Iterate over all clusters to get the product of the Delta_C's.
         for j,sc in enumerate(Sc):
             P_sc *= self.Deltas[j,int(sc==1),:]
