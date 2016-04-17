@@ -39,54 +39,27 @@ class Bottleneck(object):
         self.hasBeenSetup = False
         self.rng = np.random.RandomState()
 
-    def calc_P_sc(self,clusterAssignP,PofSi,Si,Sc):
+    def calc_P_sc(self,PofSi,Sc):
         """
         P({s_C}) for a particular {s_C} 
         Must sum over all states {s_i}
-        2016-04-15 
+        2016-04-17
        
         Params:
         -------
-        PofthisCgiveni (ndarray)
-            n_clusters x n_spins, P(C|i)
         PofSi (ndarray)
             n_states vector of the probabilities of given states
-        Si (ndarray)
-            n_states x n_spins, data to consider
         Sc (ndarray)
             n_clusters, fixed vector of cluster orientations (function that loops this function will iterate over these)
         """
-        P_sc = 1
         # Iterate over all clusters to get the product of the Delta_C's.
-        for j,sc in enumerate(Sc):
-            innerTerm = 0
-            # Iterate over all the microscopic states.
-            for i,si in enumerate(Si):
-                innerTerm += self.calc_Delta( clusterAssignP[j],sc,si ) * PofSi[i]
-            P_sc *= innerTerm
-        return P_sc
-        
-    def calc_P_sc_given_si( self,clusterAssignP,si,sc):
-        """
-        P({s_C})
-        Must sum over all states {s_i}
-        
-        Params:
-        -------
-        PofthisCgiveni (ndarray)
-            n_clusters x n_spins, P(C|i)
-        si (ndarray)
-            n_spins, data to consider
-        Sc (ndarray)
-            n_clusters, fixed vector of cluster orientations (function that loops this function will iterate over these)
-        """
-        Delta = 1.
-        # Iterate over all the states.
-        for j in xrange(len(sc)):
-            Delta *= self.calc_Delta( clusterAssignP[j],sc[j],si )
-        return Delta
+        dp = np.zeros((self.Nc,len(PofSi)))
+        for i,sc in enumerate(Sc):
+            dp[i,:] = self.Deltas[i,(sc==1).astype(int),:]
+        return (dp*PofSi[None,:]).sum(1).prod()
+        #return (self.Deltas[:,(Sc==1).astype(int),:]*PofSi[None,:]).sum(1).prod()
 
-    def calc_P_sc_and_S(self,clusterAssignProbs,PofSi,Si,Sc=None):
+    def calc_P_sc_and_S(self,PofSi,Si,Sc=None):
         """
         Calculate matrix of P({s_C}|{s_i},S) of all possible states {s_C} given some data {s_i}. This means that I should iterate overall the observed states {s_i} and compute the probabilities of possible states {s_C}.
 
@@ -113,23 +86,54 @@ class Bottleneck(object):
             ScGen = refresh_ScGen()
             Psc = np.zeros((2,len(Sc)))
 
-        for i,si in enumerate(Si):
-            # Compute probabilities of all cluster votes given a particular microscopic config {s_i}.
-            for j,sc in enumerate(ScGen):
-                dp = self.calc_P_sc_given_si( clusterAssignProbs,si,sc )*PofSi[i]
-                if si.sum()>0:
-                    Psc[1,j] += dp
-                else:
-                    Psc[0,j] += dp
+        P_Sc_and_S = np.zeros((2,2**self.Nc))
+        for j,sc in enumerate(ScGen):
+            negIx = Si.sum(1)<0
 
-            ScGen = refresh_ScGen()
-        P_sc_S = Psc
-        return P_sc_S
+            dp = np.ones((negIx.sum()))
+            for kc,k in enumerate(sc):
+                dp *= self.Deltas[kc,int(k==1),negIx]
+            dp *= PofSi[negIx]
+            P_Sc_and_S[0,j] = dp.sum()
+            
+            dp = np.ones(((negIx==0).sum()))
+            for kc,k in enumerate(sc):
+                dp *= self.Deltas[kc,int(k==1),negIx==0]
+            dp *= PofSi[negIx==0]
+            P_Sc_and_S[1,j] = dp.sum()
+
+        return P_Sc_and_S
+ 
+    def calc_Delta_for_Si( self,clusterAssignPGivenC,si,sc):
+        """
+        Calculate Delta_C for all given microscopic states {s_i} for all given orientations s_C, the vote of C.
         
-    def bottleneck_term(self,clusterAssignP,PSi,Si,Sc=None):
+        Params:
+        -------
+        clusterAssignPGivenC (ndarray)
+            n_clusters, P(C|i) for this particular C
+        si (ndarray)
+            n_samples x n_spins, microsocopic data state to consider
+        sc (ndarray)
+            cluster states to use
+        
+        Value:
+        ------
+        Return n_clusters x n_spin_states
+        """
+        assert clusterAssignPGivenC.ndim==1 and sc.ndim==1 and si.ndim==2
+        return self.calc_Delta( clusterAssignPGivenC[None,:,None],sc[:,None],
+                                np.swapaxes(si[:,:,None],2,0) )
+    
+    def define_Deltas(self,clusterAssignP,Si):
+        self.Deltas = np.zeros((self.Nc,2,len(Si)))
+        for i in xrange(self.Nc):
+            self.Deltas[i,:,:] = self.calc_Delta_for_Si( clusterAssignP[i],Si,np.array([-1.,1.]) )
+
+    def bottleneck_term(self,PSi,Si,Sc=None):
         """
         Calculate the first term. I(Sigma_i,Sigma_C)
-        2016-04-15
+        2016-04-17
         """
         # If Sc is not given, then consider all possible 2**Nc cluster states.
         if Sc is None:
@@ -146,16 +150,17 @@ class Bottleneck(object):
         # Iterate over all cluster orientations possible.
         for i,Sc in enumerate(ScGen):
             # Given a particular cluster orientation, sum over all data that is consistent with this.
-            P_sc[i] = self.calc_P_sc( clusterAssignP,PSi,Si,Sc )
+            P_sc[i] = self.calc_P_sc( PSi,Sc )
         
         H = -np.nansum(P_sc*np.log2(P_sc))
         return H
 
-    def accuracy_term( self,clusterAssignP,PofSi,Si,Sc ):
+    def accuracy_term( self,PofSi,Si,Sc ):
         """
         Information between cluster votes and final vote.
+        2016-04-17
         """
-        P_sc_and_S = self.calc_P_sc_and_S( clusterAssignP,PofSi,Si,Sc=Sc )
+        P_sc_and_S = self.calc_P_sc_and_S( PofSi,Si,Sc=Sc )
         return MI( P_sc_and_S )
     
     def setup(self,PSi,Si,Sc=None):
@@ -164,28 +169,30 @@ class Bottleneck(object):
         """
         beta = self.beta
         
-        @jit(nopython=True)
+        #@jit(nopython=True)
         def chi(clusterAssignP,sc,si):
-            return beta*sc*(clusterAssignP*si).sum()
+            return beta*sc*(clusterAssignP*si).sum(1)
         
-        @jit(nopython=True)
+        #@jit(nopython=True)
         def calc_Delta(clusterAssignP,sc,si):
             return 1/(1+np.exp(-chi(clusterAssignP,sc,si)))
         
         self.chi = chi
         self.calc_Delta = calc_Delta
-        
+
         def L(params,returnSeparate=False):
             if np.any(params<=0):
                 return np.inf
             
             clusterAssignP = self.reshape_and_norm(params)
+            # For each cluster, there are 2 possible outcomes given all {s_i}.
+            self.define_Deltas(clusterAssignP,Si)
             
             # Calculate the first term. I(Sigma_i,Sigma_C)
-            bottleneck = self.bottleneck_term( clusterAssignP,PSi,Si,Sc=Sc )
+            bottleneck = self.bottleneck_term( PSi,Si,Sc=Sc )
                 
             # Calculate second term: I(Sigma_C;Sigma)
-            accuracy = self.accuracy_term( clusterAssignP,PSi,Si,Sc )
+            accuracy = self.accuracy_term( PSi,Si,Sc )
             
             # Min the entropy of the code while max overlap with final vote outcome.
             if returnSeparate:
