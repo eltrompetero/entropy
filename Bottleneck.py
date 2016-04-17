@@ -218,6 +218,30 @@ class Bottleneck(object):
         
         self.bottleneck,self.accuracy = self.L( self.clusterAssignP.ravel(),True )
         return self.clusterAssignP
+
+    def solve_many_times(self,nIters,nJobs=None,**kwargs):
+        """
+        2016-04-17
+        """
+        if nJobs is None:
+            nJobs = cpu_count()
+        Solns = []
+        
+        def f(i):
+            self.rng = np.random.RandomState()
+            soln = [ self.solve(self.rng.rand(self.Nc*self.N),**kwargs) ]
+            soln.append( self.L(self.clusterAssignP,True) )
+            return soln
+        
+        if nJobs>0:
+            p = Pool(nJobs)
+            Solns = p.map( f,range(nIters) )
+        else:
+            Solns = []
+            for i in xrange(nIters):
+                Solns.append( f(i) )
+        
+        return Solns
     
     def reshape_and_norm(self,x):
         x = np.reshape(x,(self.Nc,self.N,))
