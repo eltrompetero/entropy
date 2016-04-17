@@ -146,7 +146,7 @@ class Bottleneck(object):
     def define_Deltas(self,clusterAssignP,Si):
         self.Deltas = np.zeros((self.Nc,2,len(Si)))
         for i in xrange(self.Nc):
-            self.Deltas[i,:,:] = self.calc_Delta_for_Si( clusterAssignP[i],Si,np.array([-1,1]) )
+            self.Deltas[i,:,:] = self.calc_Delta_for_Si( clusterAssignP[i],Si,np.array([-1.,1.]) )
 
     def bottleneck_term(self,PSi,Si,Sc=None):
         """
@@ -176,6 +176,7 @@ class Bottleneck(object):
     def accuracy_term( self,PofSi,Si,Sc ):
         """
         Information between cluster votes and final vote.
+        2016-04-17
         """
         P_sc_and_S = self.calc_P_sc_and_S( PofSi,Si,Sc=Sc )
         return MI( P_sc_and_S )
