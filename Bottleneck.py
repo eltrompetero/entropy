@@ -89,17 +89,18 @@ class Bottleneck(object):
         P_Sc_and_S = np.zeros((2,2**self.Nc))
         for j,sc in enumerate(ScGen):
             negIx = Si.sum(1)<0
+
             dp = np.ones((negIx.sum()))
             for kc,k in enumerate(sc):
                 dp *= self.Deltas[kc,int(k==1),negIx]
             dp *= PofSi[negIx]
-            P_Sc_and_S[0,j] += dp.sum()
+            P_Sc_and_S[0,j] = dp.sum()
             
             dp = np.ones(((negIx==0).sum()))
             for kc,k in enumerate(sc):
                 dp *= self.Deltas[kc,int(k==1),negIx==0]
             dp *= PofSi[negIx==0]
-            P_Sc_and_S[1,j] += dp.sum()
+            P_Sc_and_S[1,j] = dp.sum()
 
         return P_Sc_and_S
  
