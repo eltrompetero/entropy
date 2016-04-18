@@ -36,7 +36,7 @@ class Bottleneck(object):
         self.Nc = Nc
         self.gamma = 1  # penalty tradeoff
         self.beta = 10  # inverse temperature for soft spins
-        self.zeta = 0
+        self.zeta = 1
         self.hasBeenSetup = False
         self.rng = np.random.RandomState()
 
