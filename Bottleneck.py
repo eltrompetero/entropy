@@ -36,6 +36,7 @@ class Bottleneck(object):
         self.Nc = Nc
         self.gamma = 1  # penalty tradeoff
         self.beta = 10  # inverse temperature for soft spins
+        self.zeta = 0
         self.hasBeenSetup = False
         self.rng = np.random.RandomState()
 
@@ -89,19 +90,19 @@ class Bottleneck(object):
         P_Sc_and_S = np.zeros((2,2**self.Nc))
         for j,sc in enumerate(ScGen):
             negIx = Si.sum(1)<0
-
-            dp = np.ones((negIx.sum()))
-            for kc,k in enumerate(sc):
-                dp *= self.Deltas[kc,int(k==1),negIx]
-            dp *= PofSi[negIx]
-            P_Sc_and_S[0,j] = dp.sum()
             
-            dp = np.ones(((negIx==0).sum()))
+            dp = np.zeros((negIx.sum()))
             for kc,k in enumerate(sc):
-                dp *= self.Deltas[kc,int(k==1),negIx==0]
-            dp *= PofSi[negIx==0]
-            P_Sc_and_S[1,j] = dp.sum()
-
+                dp += np.log( self.Deltas[kc,int(k==1),negIx] )
+            dp += np.log( PofSi[negIx] )
+            P_Sc_and_S[0,j] = np.exp(dp).sum()
+            
+            dp = np.zeros(((negIx==0).sum()))
+            for kc,k in enumerate(sc):
+                dp += np.log( self.Deltas[kc,int(k==1),negIx==0] )
+            dp += np.log( PofSi[negIx==0] )
+            P_Sc_and_S[1,j] = np.exp(dp).sum()
+        
         return P_Sc_and_S
  
     def calc_Delta_for_Si( self,clusterAssignPGivenC,si,sc):
@@ -189,15 +190,24 @@ class Bottleneck(object):
             self.define_Deltas(clusterAssignP,Si)
             
             # Calculate the first term. I(Sigma_i,Sigma_C)
-            bottleneck = self.bottleneck_term( PSi,Si,Sc=Sc )
-                
+            if self.gamma>0:
+                bottleneck = self.bottleneck_term( PSi,Si,Sc=Sc )
+            else:
+                bottleneck = 0.
+
             # Calculate second term: I(Sigma_C;Sigma)
             accuracy = self.accuracy_term( PSi,Si,Sc )
-            
+
+            # Calculate information cost of specifying the clusters.
+            if self.zeta>0:
+                clusterInfo = MI( clusterAssignP/self.N )
+            else:
+                clusterInfo = 0.
+
             # Min the entropy of the code while max overlap with final vote outcome.
             if returnSeparate:
                 return bottleneck, accuracy
-            return self.gamma * bottleneck - accuracy
+            return self.gamma * bottleneck - accuracy + self.zeta*clusterInfo
         self.L = L
         self.hasBeenSetup = True
         
