@@ -194,7 +194,7 @@ class Bottleneck(object):
                 bottleneck = self.bottleneck_term( PSi,Si,Sc=Sc )
             else:
                 bottleneck = 0.
-
+            
             # Calculate second term: I(Sigma_C;Sigma)
             accuracy = self.accuracy_term( PSi,Si,Sc )
 
