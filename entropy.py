@@ -796,7 +796,16 @@ def nan_calc_sijk(data):
 def calc_nth_correl(data,n,weighted=False,vecout=True):
     """
     Compute the nth order correlations in the data.
-    2014-08-22
+    2016-05-17
+    
+    Params:
+    -------
+    data (ndarray n_samples x n_dims)
+    n (int)
+        Order of correlation to compute.
+    weighted (bool=False)
+    vecout (bool=True)
+        Return a flattened vector instead of some higher-dimensional tensor.
     """
     from itertools import combinations
     from scipy.special import binom
@@ -810,7 +819,7 @@ def calc_nth_correl(data,n,weighted=False,vecout=True):
         s = np.zeros((binom(data.shape[1],n)))
         j = 0
         for i in combinations(range(data.shape[1]),n):
-            arr = np.array([data[:,k] for k in i]).T # pull out relevant cols
+            arr = data[:,i]  # pull out relevant cols
             s[j] = np.sum( weighted * np.prod(arr,1) )
             j += 1
     else:
