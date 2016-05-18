@@ -354,8 +354,7 @@ def convert_to_maj(states, maj0or1=1):
     2014-02-08
     """
     uS = np.unique(states)
-    if not np.array_equal( uS,np.array([0.,1.]) ):
-        if len(uS)==1 and ( not uS==0 and not uS==1 ):
+    if not np.array_equal( uS,np.array([0.,1.]) ) or (len(uS)==1 and ( not uS==0 and not uS==1 )):
             raise Exception("This function can only deal with {0,1}.")
 
     states = states.copy()
