@@ -795,8 +795,8 @@ def nan_calc_sijk(data):
 
 def calc_nth_correl(data,n,weighted=False,vecout=True):
     """
+    Compute the nth order correlations in the data.
     2014-08-22
-        Compute the nth order correlations in the data.
     """
     from itertools import combinations
     from scipy.special import binom
