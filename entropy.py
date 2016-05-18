@@ -820,7 +820,7 @@ def calc_nth_correl(data,n,weighted=False,vecout=True):
         j = 0
         for i in combinations(range(data.shape[1]),n):
             arr = data[:,i]  # pull out relevant cols
-            s[j] = np.sum( weighted * np.prod(arr,1) )
+            s[j] = weighted.dot( np.prod(arr,1) )
             j += 1
     else:
         raise Exception("not written")
