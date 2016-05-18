@@ -354,8 +354,8 @@ def convert_to_maj(states, maj0or1=1):
     2014-02-08
     """
     uS = np.unique(states)
-    if not np.array_equal( uS,np.array([0.,1.]) ) and not uS==0 and not uS==1:
-        raise Exception("This function can only deal with {0,1}.")
+    if not np.array_equal( uS,np.array([0.,1.]) ) or (len(uS)==1 and ( not uS==0 and not uS==1 )):
+            raise Exception("This function can only deal with {0,1}.")
 
     states = states.copy()
 
@@ -795,8 +795,17 @@ def nan_calc_sijk(data):
 
 def calc_nth_correl(data,n,weighted=False,vecout=True):
     """
-    2014-08-22
-        Compute the nth order correlations in the data.
+    Compute the nth order correlations in the data.
+    2016-05-17
+    
+    Params:
+    -------
+    data (ndarray n_samples x n_dims)
+    n (int)
+        Order of correlation to compute.
+    weighted (bool=False)
+    vecout (bool=True)
+        Return a flattened vector instead of some higher-dimensional tensor.
     """
     from itertools import combinations
     from scipy.special import binom
@@ -810,8 +819,8 @@ def calc_nth_correl(data,n,weighted=False,vecout=True):
         s = np.zeros((binom(data.shape[1],n)))
         j = 0
         for i in combinations(range(data.shape[1]),n):
-            arr = np.array([data[:,k] for k in i]).T # pull out relevant cols
-            s[j] = np.sum( weighted * np.prod(arr,1) )
+            arr = data[:,i]  # pull out relevant cols
+            s[j] = weighted.dot( np.prod(arr,1) )
             j += 1
     else:
         raise Exception("not written")
