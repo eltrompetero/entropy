@@ -530,6 +530,7 @@ def calc_sisj(data,weighted=None,concat=False, excludeEmpty=False):
 def calc_cij(data,weighted=None,return_square=False):
     """
     Each sample state along a row.
+    2014-05-25
 
     Params:
     -------
@@ -542,8 +543,8 @@ def calc_cij(data,weighted=None,return_square=False):
     return_square (bool,False) : return Cij matrix with variances
 
     Value:
-        (cij,cijMat) : duplet of singlet and dubplet means
-    2014-05-25
+    ------
+    (cij,cijMat) : duplet of singlet and dubplet means
     """
     (S,N) = data.shape
     cij = np.zeros(N*(N-1)/2)
