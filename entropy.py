@@ -584,6 +584,12 @@ def nan_calc_sisj(data):
 
     return ( np.nansum(data,0)/np.sum(np.isnan(data)==0,0), sisj )
 
+def state_probs(*args,**kwargs):
+    """
+    Alias for get_state_probs()
+    """
+    return get_state_probs(*args,**kwargs)
+
 def get_state_probs(v,allstates=None,weights=None,normalized=True):
     """
     Get probability of unique states. There is an option to allow for weights counting of the words.
@@ -595,18 +601,20 @@ def get_state_probs(v,allstates=None,weights=None,normalized=True):
     weights (vector)
     normalized (bool=True)
         Return probability distribution instead of frequency count
-
+    
     Value:
     ------
     freq (ndarray) : vector of the probabilities of each state
     """
     n = v.shape[1]
-    j=0
+    j = 0
+    returnAllStates = False
 
     if allstates is None:
         allstates = unique_rows(v,return_inverse=True)
         freq = np.bincount( allstates )
         x = range(len(freq))
+        returnAllStates = True
     else:
         if weights is None:
             weights = np.ones((v.shape[0]))
@@ -621,6 +629,9 @@ def get_state_probs(v,allstates=None,weights=None,normalized=True):
             warnings.warn("States not found in given list of all states.")
     if normalized:
         freq = freq.astype(float)/np.sum(freq)
+
+    if returnAllStates:
+        return freq,allstates
     return freq
 
 def calc_sn(n,S):

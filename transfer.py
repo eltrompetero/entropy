@@ -130,12 +130,15 @@ class TransferEntropy(object):
                                  returnProbabilities=False):
         """
         Transfer entropy from x->y 
-        Using histogram binning for unidimensional data and k-means clustering for k-dimensional data where input data points are a set of points from a trajectory.
+        Using histogram binning for unidimensional data and k-means clustering for k-dimensional data where
+        input data points are a set of points from a trajectory.
 
-        We compute the empirical distribution p(i_{n+1},i_n,j_n) and marginalize over this to get the conditional probabilities required for transfer entropy calculation.
+        We compute the empirical distribution p(i_{n+1},i_n,j_n) and marginalize over this to get the
+        conditional probabilities required for transfer entropy calculation.
 
-        Note:
-        Random seeds with k-means clustering might affect the computed results. Good idea to try several iterations or many different k-means seeds.
+        NOTE:
+        Random seeds with k-means clustering might affect the computed results. Good idea to try several
+        iterations or many different k-means seeds.
 
         2015-12-23
 
