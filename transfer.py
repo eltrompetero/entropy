@@ -60,7 +60,7 @@ class TransferEntropy(object):
         Random seeds with k-means clustering might affect the computed results. Good idea to try several
         iterations or many different k-means seeds.
 
-        2015-12-23
+        2016-11-09
 
         Params:
         -------
@@ -91,7 +91,7 @@ class TransferEntropy(object):
             future[i,:] = y[(i+kPastMx):(i+kPastMx+kFuture)]
             past[i,:] = y[(i+kPastMx-kPast):(i+kPastMx)]
             otherPast[i,:] = x[(i+kPastMx-kPastOther):(i+kPastMx)]
-        
+
         if discretize:
             discreteFuture = self.digitize_vector_or_scalar( future,bins[2] )
             discretePast = self.digitize_vector_or_scalar( past,bins[0] )
@@ -107,9 +107,9 @@ class TransferEntropy(object):
         uniqxy = xy[unique_rows(xy)]  # unique entries in data that will be assigned probabilities using kernel
         pXXkY = np.zeros((uniqxy.shape[0]))
         for i,row in enumerate(uniqxy):
-            pXXkY[i] = np.sum( np.prod(row[None,:]==xy,1) )
+            pXXkY[i] = np.sum( np.all(row[None,:]==xy,1) )
         pXXkY /= np.sum(pXXkY)
-
+        
         Xk = np.bincount(discretePast)
         pXk = Xk / np.sum(Xk)
 
@@ -117,21 +117,18 @@ class TransferEntropy(object):
         uniqYXk = YXk[unique_rows(YXk)]
         pYXk = np.zeros((uniqYXk.shape[0]))
         for i,r in enumerate(uniqYXk):
-            pYXk[i] = np.sum( np.prod(r[None,:]==YXk,1) )
+            pYXk[i] = np.sum( np.all(r[None,:]==YXk,1) )
         pYXk = pYXk / np.sum(pYXk)
 
         XXk = np.c_[(discreteFuture,discretePast)]
         uniqXXk = XXk[unique_rows(XXk)]
         pXXk = np.zeros((uniqXXk.shape[0]))
         for i,r in enumerate(uniqXXk):
-            pXXk[i] = np.sum( np.prod(r[None,:]==XXk,1) )
+            pXXk[i] = np.sum( np.all(r[None,:]==XXk,1) )
         pXXk = pXXk / np.sum(pXXk)
 
         transferEntropy = ( np.nansum( pXXkY*np.log2(pXXkY) ) + np.nansum( pXk*np.log2(pXk) ) 
                            -np.nansum( pYXk*np.log2(pYXk) ) - np.nansum( pXXk*np.log2(pXXk) ) )
-
-        if returnProbabilities:
-            return transferEntropy,pijk,piCondij,piCondi
         return transferEntropy
 
     def _n_step_transfer_entropy( self, x, y,
