@@ -47,23 +47,25 @@ class TransferEntropy(object):
         
     def n_step_transfer_entropy( self, x, y,
                                  kPast=1, kPastOther=1, kFuture=1,
-                                 bins=[10,10,10],
+                                 bins=[10,10,10],discretize=True,
                                  returnProbabilities=False):
         """
         Transfer entropy from x->y 
-        Using histogram binning for unidimensional data and k-means clustering for k-dimensional data where input data points are a set of points from a trajectory.
+        Using histogram binning for unidimensional data and k-means clustering for k-dimensional data where
+        input data points are a set of points from a trajectory.
 
         Compute n step transfer entropy by summing the entropies when the transfer entropy is rewritten.
 
         Note:
-        Random seeds with k-means clustering might affect the computed results. Good idea to try several iterations or many different k-means seeds.
+        Random seeds with k-means clustering might affect the computed results. Good idea to try several
+        iterations or many different k-means seeds.
 
         2015-12-23
 
         Params:
-        x
+        -------
+        x,y
             (n_samples,n_dim)
-        y
         kPast (int)
             k steps into the past
         kPastOther (int)
@@ -72,12 +74,15 @@ class TransferEntropy(object):
             k steps into the future
         [binsPast,binsOtherPast,binsFuture] (list of ints)
             number of bins (or clusters) for trajectories
+        discretize (bool=True)
+            Whether or not to discretize the data.
         returnProbabilities (False, bool)
         """
+        # Variables
+        # discreteFuture,discretePast,discreteOtherPast : 1d vectors labeling sets of trajectories
         kPastMx = max([kPast,kPastOther])
-
         transferEntropy = 0.
-
+        
         # Construct matrix of data points (i_{n+1},i_n,j_n) where i and j are vectors.
         future = np.zeros((x.shape[0]-kPastMx-kFuture+1,kFuture))
         past = np.zeros((x.shape[0]-kPastMx-kFuture+1,kPast))
@@ -86,11 +91,16 @@ class TransferEntropy(object):
             future[i,:] = y[(i+kPastMx):(i+kPastMx+kFuture)]
             past[i,:] = y[(i+kPastMx-kPast):(i+kPastMx)]
             otherPast[i,:] = x[(i+kPastMx-kPastOther):(i+kPastMx)]
-
-        discreteFuture = self.digitize_vector_or_scalar( future,bins[2] )
-        discretePast = self.digitize_vector_or_scalar( past,bins[0] )
-        discreteOtherPast = self.digitize_vector_or_scalar( otherPast,bins[1] )
-
+        
+        if discretize:
+            discreteFuture = self.digitize_vector_or_scalar( future,bins[2] )
+            discretePast = self.digitize_vector_or_scalar( past,bins[0] )
+            discreteOtherPast = self.digitize_vector_or_scalar( otherPast,bins[1] )
+        else:
+            discreteFuture = unique_rows(future,return_inverse=True)
+            discretePast = unique_rows(past,return_inverse=True)
+            discreteOtherPast = unique_rows(otherPast,return_inverse=True)
+        
         # Marginal distributions.
         # Compute p(i_{n+1},i_n,j_n)
         xy = np.c_[(discreteFuture,discretePast,discreteOtherPast)]  # data as row vectors arranged into matrix
