@@ -9,6 +9,72 @@ from numba import jit
 from misc.utils import unique_rows
 from numba import float64
 
+
+class DiscreteEntropy(object):
+    def __init__(self,bins,ndim=None):
+        """
+        Class for entropy estimation.
+        2016-12-08
+        
+        Params:
+        -------
+        """
+        self.bins = bins
+        if ndim is None:
+            try:
+                self.ndim = len(bins)
+            except TypeError:
+                raise Exception("Must set ndim.")
+        else:
+            self.ndim = ndim
+            self.bins = [bins]*self.ndim
+        
+    def _estimate_pdf(self,X,bins=None):
+        """
+        Estimate multi-dimensional entropy.
+        """
+        if bins is None:
+            bins=self.bins
+            
+        self.pdf,self.edges = np.histogramdd(X,bins=bins)
+        self.pdf /= self.pdf.sum()
+        
+    def estimate_S(self,X,method='naive',binRange=[]):
+        """
+        Params:
+        -------
+        X (array)
+            n_samples x n_dim
+        method (str='naive')
+            'naive': simple estimation using empirical pdf
+            'extrapolate': calculate entropy for multiple bin sizes
+        binRange (list=[])
+            Bounds on the bin range. Bins will be increased on the dimensions from left to right
+            consecutively. This must be given for 'extrapolate' method.
+        """
+        if method=='naive':
+            self._estimate_pdf(X)
+            self.S = -np.nansum( self.pdf*np.log2(self.pdf) )
+        elif method=='extrapolate':
+            S = []
+            bins=[binRange[0]]*self.ndim
+            k = 0
+            for i in xrange(binRange[0],binRange[1]):
+                if i==binRange[0]:
+                    self._estimate_pdf(X,bins)
+                    S.append([-np.nansum( self.pdf*np.log2(self.pdf) )])
+                    k += 1
+                S.append([])
+                for j in xrange(self.ndim):
+                    bins[j] += 1
+                    self._estimate_pdf(X,bins)
+                    S[-1].append( -np.nansum( self.pdf*np.log2(self.pdf) ) )
+                    k += 1
+            self.S = S
+        return self.S
+# end DiscreteEntropy
+
+
 def enumerate_states(x):
     """
     Given data array x, assign a unique integer label to each row.
