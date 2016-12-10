@@ -38,6 +38,25 @@ class DiscreteEntropy(object):
             
         self.pdf,self.edges = np.histogramdd(X,bins=bins)
         self.pdf /= self.pdf.sum()
+
+    def disc_state(self,X):
+        """
+        Return a mapping of the discretized states to integers
+        2016-12-09
+
+        Params:
+        -------
+        X (ndarray)
+            n_samples x n_dim
+        """
+        from bisect import bisect
+        
+        self._estimate_pdf(X)
+        disclabel = np.zeros_like(X,dtype=int)
+        for i,x in enumerate(X):
+            for j in xrange(self.ndim):
+                disclabel[i] = [bisect(self.edges[j],x_,hi=len(self.edges[j])-2) for x_ in x]
+        return unique_rows(disclabel,return_inverse=True)
         
     def estimate_S(self,X,method='naive',binRange=[]):
         """
@@ -106,10 +125,11 @@ def bootstrap_MI(data,ix1,ix2,nIters,sampleFraction=1.):
         miSamples[i] = MI(p)
     return miSamples
 
-@jit
+@jit(cache=True)
 def joint_p_mat(data,ix1,ix2):
     """
-    Return joint probability matrix between different groups of columns of a data matrix. Works on any type of data that can be identified separately by misc.utils.unique_rows().
+    Return joint probability matrix between different groups of columns of a data matrix. Works on any type of
+    data that can be identified separately by misc.utils.unique_rows().
     2016-01-12
     
     Params:
