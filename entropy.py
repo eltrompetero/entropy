@@ -621,20 +621,23 @@ def calc_sisj(data,weighted=None,concat=False, excludeEmpty=False):
     else:
         return si, sisj
 
-def calc_cij(data,weighted=None,return_square=False):
+def calc_cij(data,weighted=None,return_square=False,ignorenan=False):
     """
-    Each sample state along a row.
-    2014-05-25
+    Each sample state along a row. This is the correlation matrix <sisj>-<si><sj>.
+    2016-12-28
 
     Params:
     -------
     data (ndarray)
-    *kwargs:
+    **kwargs:
     weighted (np.ndarray,None) : 
-    Calculate single and pairwise means given fractional weights for each state in
-    the data such that a state only appears with some weight, typically less than
-    one
-    return_square (bool,False) : return Cij matrix with variances
+        Calculate single and pairwise means given fractional weights for each state in the data such that a
+        state only appears with some weight, typically less than one.
+    return_square (bool,False)
+        return Cij matrix with variances
+    ignorenan (bool=False)
+        If True, exclude nan from calculation. This may return a set of correlations that are incompatible
+        with a joint probability distribution.
 
     Value:
     ------
@@ -642,32 +645,48 @@ def calc_cij(data,weighted=None,return_square=False):
     """
     (S,N) = data.shape
     cij = np.zeros(N*(N-1)//2)
-    
-    if weighted is None:
-        weighted = np.ones((data.shape[0]))
-    
-    si = np.sum(data*np.expand_dims(weighted,1),0)/float(np.sum(weighted))
-    k=0
-    for i in range(N-1):
-        for j in range(i+1,N):
-            cij[k] = np.sum(data[:,i]*data[:,j]*weighted)/float(np.sum(weighted))\
-                      -si[i]*si[j]
-            k+=1
 
-    if return_square:
-        cijMat = squareform(cij)
-        cijMat[np.eye(N)==1] = si
-        return cij,cijMat
+    if ignorenan:
+        k=0
+        for i in range(N-1):
+            for j in range(i+1,N):
+                nanix=np.logical_or( np.isnan(data[:,i]),np.isnan(data[:,j]) )
+                cij[k] = ( (data[nanix==0,i]*data[nanix==0,j]).mean() - 
+                            data[nanix==0,i].mean()*data[nanix==0,j].mean() )
+                k+=1
+
+        if return_square:
+            cijMat = squareform(cij)
+            cijMat[np.eye(N)==1] = si
+            return cij,cijMat
+        else:
+            return cij
     else:
-        return cij
+        if weighted is None:
+            weighted = np.ones((data.shape[0]))
+        
+        si = np.sum(data*np.expand_dims(weighted,1),0)/float(np.sum(weighted))
+        k=0
+        for i in range(N-1):
+            for j in range(i+1,N):
+                cij[k] = np.sum(data[:,i]*data[:,j]*weighted)/float(np.sum(weighted))\
+                          -si[i]*si[j]
+                k+=1
+
+        if return_square:
+            cijMat = squareform(cij)
+            cijMat[np.eye(N)==1] = si
+            return cij,cijMat
+        else:
+            return cij
 
 def nan_calc_sisj(data):
     """
+    Each col in data should correspond to a set votes by one spin.
     2013-12-19
-        Each col in data should correspond to a set votes by one spin.
     """
     (S,N) = data.shape
-    sisj = np.zeros(N*(N-1)/2)
+    sisj = np.zeros(N*(N-1)//2)
 
     k=0
     for i in range(N-1):
