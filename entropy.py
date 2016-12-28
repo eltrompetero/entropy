@@ -621,7 +621,7 @@ def calc_sisj(data,weighted=None,concat=False, excludeEmpty=False):
     else:
         return si, sisj
 
-def calc_cij(data,weighted=None,return_square=False,ignorenan=False):
+def calc_cij(data,weighted=None,return_square=False,ignorenan=False,subtractmean=True):
     """
     Each sample state along a row. This is the correlation matrix <sisj>-<si><sj>.
     2016-12-28
@@ -638,10 +638,12 @@ def calc_cij(data,weighted=None,return_square=False,ignorenan=False):
     ignorenan (bool=False)
         If True, exclude nan from calculation. This may return a set of correlations that are incompatible
         with a joint probability distribution.
+    subtractmean (bool=True)
+        Subtract product of means <si><sj>.
 
     Value:
     ------
-    (cij,cijMat) : duplet of singlet and dubplet means
+    (cij,cijMat)
     """
     (S,N) = data.shape
     cij = np.zeros(N*(N-1)//2)
@@ -651,8 +653,11 @@ def calc_cij(data,weighted=None,return_square=False,ignorenan=False):
         for i in range(N-1):
             for j in range(i+1,N):
                 nanix=np.logical_or( np.isnan(data[:,i]),np.isnan(data[:,j]) )
-                cij[k] = ( (data[nanix==0,i]*data[nanix==0,j]).mean() - 
-                            data[nanix==0,i].mean()*data[nanix==0,j].mean() )
+                if subtractmean:
+                    cij[k] = ( (data[nanix==0,i]*data[nanix==0,j]).mean() - 
+                                data[nanix==0,i].mean()*data[nanix==0,j].mean() )
+                else:
+                    cij[k] = (data[nanix==0,i]*data[nanix==0,j]).mean()
                 k+=1
 
         if return_square:
@@ -664,13 +669,16 @@ def calc_cij(data,weighted=None,return_square=False,ignorenan=False):
     else:
         if weighted is None:
             weighted = np.ones((data.shape[0]))
-        
-        si = np.sum(data*np.expand_dims(weighted,1),0)/float(np.sum(weighted))
+        if subtractmean:
+            si = np.sum(data*np.expand_dims(weighted,1),0)/float(np.sum(weighted))
         k=0
         for i in range(N-1):
             for j in range(i+1,N):
-                cij[k] = np.sum(data[:,i]*data[:,j]*weighted)/float(np.sum(weighted))\
-                          -si[i]*si[j]
+                if subtractmean:
+                    cij[k] = np.sum(data[:,i]*data[:,j]*weighted)/float(np.sum(weighted))\
+                              -si[i]*si[j]
+                else:
+                    cij[k] = np.sum(data[:,i]*data[:,j]*weighted)/float(np.sum(weighted))
                 k+=1
 
         if return_square:
