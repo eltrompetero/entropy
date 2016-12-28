@@ -39,6 +39,14 @@ class DiscreteEntropy(object):
         self.pdf,self.edges = np.histogramdd(X,bins=bins)
         self.pdf /= self.pdf.sum()
 
+    def _kde(self,X):
+        """
+        """
+        from sklearn.neighbors import KernelDensity
+        kde = KernelDensity(bandwidth=.1,kernel='gaussian')
+        kde.fit(X)
+        self.kde = kde
+
     def disc_state(self,X):
         """
         Return a mapping of the discretized states to integers
@@ -633,7 +641,7 @@ def calc_cij(data,weighted=None,return_square=False):
     (cij,cijMat) : duplet of singlet and dubplet means
     """
     (S,N) = data.shape
-    cij = np.zeros(N*(N-1)/2)
+    cij = np.zeros(N*(N-1)//2)
     
     if weighted is None:
         weighted = np.ones((data.shape[0]))
