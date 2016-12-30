@@ -594,7 +594,7 @@ def calc_sisj(data,weighted=None,concat=False, excludeEmpty=False):
     2015-08-10
     """
     S,N = data.shape
-    sisj = np.zeros(N*(N-1)/2)
+    sisj = np.zeros(N*(N-1)//2)
     
     if weighted is None:
         weighted = np.ones((data.shape[0]))/data.shape[0]
