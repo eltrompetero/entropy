@@ -595,7 +595,7 @@ def xcalc_sisj(data,weighted=None,concat=False):
     (si,sisj) or np.concatenate((si,sisj))
         duplet of singlet and duplet means
     """
-    from itertools import combinations
+    # Initialize variables.
     if weighted is None:
         def f():
             while True:
@@ -605,28 +605,34 @@ def xcalc_sisj(data,weighted=None,concat=False):
     n = len(data0)
     si,sisj = np.zeros((n)),np.zeros((n*(n-1)//2))
     
-    counter = 0
-    thisWeight = weighted.next()
-    si += data0*thisWeight
-    for i in xrange(n-1):
-        for j in xrange(i+1,n):
-            sisj[counter] = data0[i]*data0[j]*thisWeight
-            counter+=1
-
-    ndata = 1
-    for d in data:
-        thisWeight = weighted.next()
+    # Initialize loop function that we hope to speed up at some point.
+    @jit(nopython=True)
+    def inside_loop(sisj,d,n,thisWeight):
         counter = 0
-        si += d*thisWeight
         for i in xrange(n-1):
             for j in xrange(i+1,n):
                 sisj[counter] += d[i]*d[j]*thisWeight
                 counter+=1
-        ndata += 1
+
+    def loop(si,sisj,data,weighted):
+        ndata = 0
+        for d in data:
+            thisWeight = weighted.next()
+            si += d*thisWeight
+            inside_loop(sisj,d,n,thisWeight) 
+            ndata += 1
+        return ndata
     
+    # Calculate correlations.
+    thisWeight = weighted.next()
+    si += data0*thisWeight
+    inside_loop(sisj,data0,n,thisWeight)
+    ndata = loop(si,sisj,data,weighted) + 1
+
     si /= ndata
     sisj /= ndata
-
+    
+    # Return values.
     if concat:
         return np.concatenate((si,sisj))
     else:
