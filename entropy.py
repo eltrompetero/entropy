@@ -1,7 +1,5 @@
 # Functions necessary for calculating entropies.
-#
 # 2013-06-25
-
 from __future__ import division
 import numpy as np
 #import clusters as cluster
@@ -576,6 +574,63 @@ def calc_nan_sisj(data,weighted=None,concat=False):
             k+=1
     
     return (np.nanmean(data,0), sisj)
+
+def xcalc_sisj(data,weighted=None,concat=False):
+    """
+    Calculate correlations for Ising model using generators.
+
+    Params:
+    -------
+    data (ndarray)
+        (n_samples,n_dim).
+    weighted (np.ndarray=None)
+        Calculate single and pairwise means given fractional weights for each state in
+        the data such that a state only appears with some weight, typically less than
+        one.
+    concat (bool=False)
+        Return concatenated means if true
+
+    Returns:
+    --------
+    (si,sisj) or np.concatenate((si,sisj))
+        duplet of singlet and duplet means
+    """
+    from itertools import combinations
+    if weighted is None:
+        def f():
+            while True:
+                yield 1.
+        weighted = f()
+    data0 = data.next()
+    n = len(data0)
+    si,sisj = np.zeros((n)),np.zeros((n*(n-1)//2))
+    
+    counter = 0
+    thisWeight = weighted.next()
+    si += data0*thisWeight
+    for i in xrange(n-1):
+        for j in xrange(i+1,n):
+            sisj[counter] = data0[i]*data0[j]*thisWeight
+            counter+=1
+
+    ndata = 1
+    for d in data:
+        thisWeight = weighted.next()
+        counter = 0
+        si += d*thisWeight
+        for i in xrange(n-1):
+            for j in xrange(i+1,n):
+                sisj[counter] += d[i]*d[j]*thisWeight
+                counter+=1
+        ndata += 1
+    
+    si /= ndata
+    sisj /= ndata
+
+    if concat:
+        return np.concatenate((si,sisj))
+    else:
+        return si, sisj
 
 def calc_sisj(data,weighted=None,concat=False, excludeEmpty=False):
     """
