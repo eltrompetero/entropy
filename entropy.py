@@ -720,17 +720,17 @@ def state_probs(*args,**kwargs):
 def get_state_probs(v,allstates=None,weights=None,normalized=True):
     """
     Get probability of unique states. There is an option to allow for weights counting of the words.
-    2014-05-26
     
     Params:
     -------
-    states (ndarray nsamples x ndim)
+    states (ndarray)
+        nsamples x ndim
     weights (vector)
     normalized (bool=True)
         Return probability distribution instead of frequency count
     
-    Value:
-    ------
+    Returns:
+    --------
     freq (ndarray) : vector of the probabilities of each state
     """
     n = v.shape[1]
