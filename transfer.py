@@ -4,7 +4,7 @@ from __future__ import division
 import numpy as np
 from sklearn.cluster import KMeans
 from multiprocessing import Queue,Array,Process
-from misc.fcns import unique_rows
+from misc.utils import unique_rows
 
 class TransferEntropy(object):
     def __init__(self):

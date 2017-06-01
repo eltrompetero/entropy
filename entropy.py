@@ -274,12 +274,18 @@ def find_state_ix(data,states):
 def dkl(p1,p2,units=2):
     """
     Compute DKL between two probability distributions. Naive.
-    dkl = sum( p1*log(p2) )
-    Args:
-        p1 : 
-        p2 (ndarray)
-        units (opt,default 2) : units for log
-    2015-02-14
+    dkl = sum( p1*log(p1/p2) )
+    
+    Params:
+    -------
+    p1 (ndarray)
+    p2 (ndarray)
+    units (int=2)
+        units for log
+
+    Returns:
+    --------
+    Dkl
     """
     dkl = p1*np.log(p1/p2)/np.log(units)
     return np.nansum( dkl )
@@ -949,7 +955,9 @@ def calc_nth_correl(data,n,weighted=False,vecout=True):
         weighted = np.ones((data.shape[0]))/data.shape[0]
     
     if vecout:
-        s = np.zeros((binom(data.shape[1],n)))
+        raise Exception("This is not that helpful for calculating higher moments because indices should be \
+        allowed to repeat...")
+        s = np.zeros((int(binom(data.shape[1],n))))
         j = 0
         for i in combinations(range(data.shape[1]),n):
             arr = data[:,i]  # pull out relevant cols
