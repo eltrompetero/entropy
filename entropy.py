@@ -606,7 +606,7 @@ def xcalc_sisj(data,weighted=None,concat=False):
     si,sisj = np.zeros((n)),np.zeros((n*(n-1)//2))
     
     # Initialize loop function that we hope to speed up at some point.
-    @jit(nopython=True)
+    #@jit(nopython=True)
     def inside_loop(sisj,d,n,thisWeight):
         counter = 0
         for i in xrange(n-1):
@@ -628,10 +628,14 @@ def xcalc_sisj(data,weighted=None,concat=False):
     si += data0*thisWeight
     inside_loop(sisj,data0,n,thisWeight)
     ndata = loop(si,sisj,data,weighted) + 1
-
-    si /= ndata
-    sisj /= ndata
     
+    try:
+        weighted.next()
+        si /= ndata
+        sisj /= ndata
+    except StopIteration:
+        pass
+            
     # Return values.
     if concat:
         return np.concatenate((si,sisj))
