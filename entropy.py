@@ -494,17 +494,17 @@ def bin_states(n,sym=False):
     """
     Get all possible binary spin states. Remember that these are uint8 so if
     you want to do arithmetic, must convert to float.
+    
     Params:
-    --------
+    -------
     n (int)
         number of spins
     sym (bool)
         if true, return {-1,1} basis
-    2014-08-26
     """
     if n<0:
         raise Exception("n cannot be <0")
-    if n>15:
+    if n>20:
         raise Exception("n is too large to enumerate all states.")
     
     v = np.array([list(np.binary_repr(i,width=n)) for i in range(2**n)]).astype('uint8')
