@@ -798,7 +798,10 @@ def get_state_probs(v,allstates=None,weights=None,normalized=True):
     --------
     freq (ndarray) : vector of the probabilities of each state
     """
-    n = v.shape[1]
+    if v.ndim>1:
+        n = v.shape[1]
+    else:
+        n = len(v)
     j = 0
     returnAllStates = False
 
