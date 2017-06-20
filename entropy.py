@@ -443,19 +443,27 @@ def convert_to_maj(states, maj0or1=1):
     """
     Convert given states such that 0 or 1 corresponds to the majority vote. Split
     votes are left as they are.
-    Args:
-        states:
-        *kwargs
-        maj0or1 : default 1
-    Value:
-        states : states converted to majority vote
-    2014-02-08
+
+    Params:
+    -------
+    states:
+    *kwargs
+    maj0or1 (bool=True)
+
+    Returns:
+    --------
+    states
+        States converted to majority vote.
     """
     uS = np.unique(states)
-    if not np.array_equal( uS,np.array([0.,1.]) ) or (len(uS)==1 and ( not uS==0 and not uS==1 )):
-            raise Exception("This function can only deal with {0,1}.")
+    asymCase = np.array_equal( uS,np.array([0.,1.]) ) or (len(uS)==1 and ( uS==0 or uS==1 ))
+    symCase = np.array_equal( uS,np.array([-1.,1.]) ) or (len(uS)==1 and ( uS==-1 or uS==1 ))
 
+    if not (asymCase or symCase):
+            raise Exception("This function can only deal with {0,1} or {-1,+1}.")
     states = states.copy()
+    if symCase:
+        states = (states+1)/2
 
     # In case where we are given one state.
     if states.ndim==1:
@@ -466,6 +474,9 @@ def convert_to_maj(states, maj0or1=1):
 
     if maj0or1==0:
         states = 1-states
+
+    if symCase:
+        states = states*2-1
 
     return states
 
