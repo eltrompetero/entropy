@@ -290,12 +290,15 @@ def dkl(p1,p2,units=2):
 
 def estimate_S(votes):
     """
-        Estimate the entropy of a partially complete data set (missing voters from some
-        votes. Fill in the missing votes with the empirical probabilities of those 
-        votes occurring in the data.
-        Args:
-            votes : array of votes, a vote in each row
+    Estimate the entropy of a partially complete data set (missing voters from some
+    votes. Fill in the missing votes with the empirical probabilities of those 
+    votes occurring in the data.
     2014-05-22
+
+    Params:
+    -------
+    votes (ndarray)
+        array of votes, a vote in each row
     """
     votes,counts = fill_in_vote(votes)
     uVotes = np.array([x for x in set(tuple(x) for x in votes)])
