@@ -230,7 +230,7 @@ def cluster_probabilities(data,order):
 @jit
 def MI(pmat):
     """
-    Calculate mutual information between the joint probability distributions in bits.
+    Calculate mutual information between the joint probability distributions in bits. Use with joint_p_mat().
     2015-04-02
 
     Params:
