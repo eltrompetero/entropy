@@ -96,7 +96,7 @@ def check_bound(mn,mx,newmn,newmx):
     mx = min([mx,newmx])
     return mn,mx
 
-def check_triplet(X):
+def check_triplet(X,full_output=False):
     """
     Check triplet correlations, i.e. make sure that pij agrees with pik and pjk.
     All of the random examples below should work since the distribution is well defined.
@@ -105,12 +105,26 @@ def check_triplet(X):
     ----------
     X : ndarray
         n_sample,3 in terms of {-1,1} and empty data points are labeled with 0
+
+    Returns
+    -------
+    bool
+        True if distribution is consistent and False if not.
     """
     for ixOrder in [[0,1,2],[1,0,2],[2,0,1]]:
-        pijmn,pijmx,pijkmn,pijkmx = _bounds_case_p23(X[:,ixOrder])
+        try:
+            pijmn,pijmx,pijkmn,pijkmx = _bounds_case_p23(X[:,ixOrder])
+        except AssertionError:
+            if full_output:
+                print "Bounds error"
+            return False
         pij = (X[:,ixOrder[1:]]==1).all(1).sum() / X[:,ixOrder[1:]].all(1).sum()
         
         # Accounting for numerical precision errors.
         pijmn,pijmx,pij = np.around(pijmn,10),np.around(pijmx,10),np.around(pij,10)
-        assert pijmn<=pij<=pijmx, '%1.1f, %1.1f, %1.1f'%(pijmn,pij,pijmx)
+        if not (pijmn<=pij<=pijmx):
+            if full_output:
+                return False,(pijmn,pijmx),pij
+            return False
+    return True
 
