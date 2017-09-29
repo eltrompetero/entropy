@@ -96,6 +96,15 @@ def check_bound(mn,mx,newmn,newmx):
     mx = min([mx,newmx])
     return mn,mx
 
+def did_all_pairs_vote(X,i,j,k):
+    """
+    Check if all pairs in pairs of cols i,j,k voted.
+    """
+    if ( X[:,[i,j]].all(1).any() and X[:,[j,k]].all(1).any() and 
+         X[:,[i,k]].all(1).any() ):
+        return True
+    return False
+
 def check_triplet(X,full_output=False):
     """
     Check triplet correlations, i.e. make sure that pij agrees with pik and pjk.
