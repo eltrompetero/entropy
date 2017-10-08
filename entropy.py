@@ -1013,45 +1013,51 @@ def nan_calc_sijk(data):
 
     return sijk
 
-def calc_nth_correl(data,n,weighted=False,vecout=True):
+def nth_corr(data,n,weighted=False,exclude_empty=False):
     """
     Compute the nth order correlations in the data.
-    2016-05-17
     
-    Params:
-    -------
-    data (ndarray n_samples x n_dims)
-    n (int)
+    Parameters
+    ----------
+    data : ndarray
+        n_samples x n_dims)
+    n : int
         Order of correlation to compute.
-    weighted (bool=False)
-    vecout (bool=True)
-        Return a flattened vector instead of some higher-dimensional tensor.
+    weighted : bool,False
+    exclude_empty : bool,False
+        Do not combine with weighted.
+
+    Returns
+    -------
+    Vector of nth order correlations.
     """
     from itertools import combinations
     from scipy.special import binom
-    if n>data.shape[1]:
-        raise Exception("n cannot be larger than size of system in data.")
+    assert 1<n<data.shape[1], "n cannot be larger than size of system in data."
     
-    if weighted is False:
+    if weighted or not exclude_empty:
         weighted = np.ones((data.shape[0]))/data.shape[0]
-    
-    if vecout:
-        raise Exception("This is not that helpful for calculating higher moments because indices should be \
-        allowed to repeat...")
-        s = np.zeros((int(binom(data.shape[1],n))))
+        
+        corr = np.zeros( int(binom(data.shape[1],n)) )
         j = 0
         for i in combinations(range(data.shape[1]),n):
-            arr = data[:,i]  # pull out relevant cols
-            s[j] = weighted.dot( np.prod(arr,1) )
+            arr = data[:,i]
+            corr[j] = weighted.dot( np.prod(arr,1) )
             j += 1
-    else:
-        raise Exception("not written")
-        sijk = np.zeros((n,n,n))
 
+    else:
+        corr = np.zeros( int(binom(data.shape[1],n)) )
+        j = 0
         for i in combinations(range(data.shape[1]),n):
-            s[i[0],i[1],i[2]] = np.sum(weighted*(
-                data[:,i[0]]*data[:,i[1]]*data[:,i[2]]))
-    return s
+            arr = data[:,i]
+            nonzeroix = (arr!=0).all(1)
+            if nonzeroix.any():
+                corr[j] = np.prod(arr[nonzeroix],1).mean(0)
+            else:
+                corr[j] = np.nan
+            j += 1
+
+    return corr
 
 def convert_sisj(si,sisj,convertTo='11'):
     """
