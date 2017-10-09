@@ -166,17 +166,17 @@ def convert_params(h,J,convertTo='01',concat=False):
     Convert parameters from 0,1 formulation to +/-1 and vice versa.
     2014-05-12
 
-    Params:
-    -------
-    h (ndarray)
-    J (ndarray)
-    convertTo (str)
+    Parameters
+    ----------
+    h : ndarray
+    J : ndarray
+    convertTo : str,'01'
         '01' or '11'
 
-    Value:
-    ------
-    h (ndarray)
-    J (ndarray)
+    Returns
+    -------
+    h : ndarray
+    J : ndarray
     """
     if len(J.shape)!=2:
         Jmat = squareform(J)
@@ -1059,20 +1059,21 @@ def nth_corr(data,n,weighted=False,exclude_empty=False):
 
     return corr
 
-def convert_sisj(si,sisj,convertTo='11'):
+def convert_sisj(si,sisj,convertTo='11',concat=True):
     """
     Convert <sisj> between 01 and 11 formulations.
     2015-06-28
 
-    Params:
+    Parameters
     -------
     sisj (ndarray)
     si (ndarray)
     convertTo (str,'11')
         '11' will convert {0,1} formulation to +/-1 and '01' will convert +/-1 formulation to {0,1}
+    concat : bool,True
 
-    Value:
-    ------
+    Returns
+    -------
     si
         Converted to appropriate basis
     sisj
@@ -1094,5 +1095,7 @@ def convert_sisj(si,sisj,convertTo='11'):
                 newsisj[k] = ( sisj[k] + si[i] + si[j] + 1 )/4.
                 k += 1
         newsi = (si+1)/2
+    if concat:
+        return np.concatenate((newsi,newsisj))
     return newsi,newsisj
 
