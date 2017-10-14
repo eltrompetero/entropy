@@ -3,9 +3,10 @@
 # 2017-09-28
 from __future__ import division
 import numpy as np
-
+from entropy import bin_states
 
 # ============================================================================================== #
+# Missing data.
 # Functions for checking the validity of triplet probability distribution in data sets where we're
 # missing data.
 # ============================================================================================== #
@@ -137,3 +138,99 @@ def check_triplet(X,full_output=False):
             return False
     return True
 
+# ========================================================= #
+# Functions for checking probability constraints generally. #
+# ========================================================= #
+def A_matrix_for_ising(allstates):
+    """
+    Determine A matrix for computing the probabilities of all states recursively.
+    
+    Parameters
+    ----------
+    allstates : ndarray
+        All possible Ising states. These should be ordered in a consistent way probably
+        best to get them from entropy.bin_states()
+    """
+    n = allstates.shape[1]
+    assert len(allstates)==2**n
+    
+    def next_probability_and_sign(coeffs,this_state,add_or_sub):
+        """
+        Recursive method for filling in the coeffs that belong to each of the marginals
+        p_{ij...k}. The marginals are ordered in the same way as the states are output 
+        from entropy.bin_states(). In other words, given a state 
+        {s1=1,s2=0,s3=1,...,sn=0}, the
+        corresponding marginal is p13 = p(s1=s3=1 and other si=0).
+        """
+        assert len(coeffs)==2**n
+
+        if (this_state==1).all():
+            coeffs[-1] += add_or_sub
+            return
+
+        stateix = (allstates==this_state[None,:]).all(1)
+        coeffs[stateix] += add_or_sub
+
+        # Iterate through all states with one more that is 1.
+        zeroix = this_state==0
+        nextState = np.zeros(n,dtype=int)
+
+        for substate in bin_states(zeroix.sum()):
+            # Only iterate over substates that have at least one more one.
+            if any(substate):
+                nextState[:] = this_state[:]
+                nextState[zeroix] = substate
+
+                next_probability_and_sign(coeffs,nextState,-add_or_sub)
+    
+    A = np.zeros((2**n,2**n))
+    for statei,state in enumerate(allstates):
+        coeffs = np.zeros(2**n)
+        next_probability_and_sign(coeffs,state,1)
+        A[statei,:] = coeffs[:]
+        
+    A = np.vstack((A,-A))
+    return A
+
+def check_joint_consistency(X):
+    """
+    Given a data set, check whether it is compatible with a real 
+    probability distribution.
+    
+    Parameters
+    ----------
+    X : ndarray
+        Should be of shape (n_samples, n_spins) where -1 and 1 are up and down and 0 is 
+        a hidden spin.
+    """
+    from scipy.optimize import linprog
+
+    n = X.shape[1]
+    allstates = bin_states(n)
+    pijk = np.zeros(2**n-1)-1
+
+    for statei,state in enumerate(allstates[1:]):
+        # Check if there are any observations from this subset and calculate pijk if yes.
+        subsetIx = state==1
+        fullSubsetIx = (X[:,subsetIx]!=0).all(1)
+        if np.any(fullSubsetIx):
+            if subsetIx.sum()==1:
+                pijk[statei] = (X[fullSubsetIx,:][:,subsetIx]==1).mean()
+            else:
+                pijk[statei] = (X[fullSubsetIx,:][:,subsetIx]==1).all(1).mean()
+
+    # First entry corresponding to normalization.
+    bounds = [(1,1)]
+    for p in pijk:
+        if p==-1:
+            bounds.append((0,1))
+        else:
+            bounds.append((p,p))
+
+    A = A_matrix_for_ising(allstates)
+    soln = linprog(np.zeros(2**n),
+                   A_ub=A,
+                   b_ub=np.vstack((np.ones(2**n),np.zeros(2**n))),
+                   bounds=bounds)
+    return soln['success']
+# End general functions section
