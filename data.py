@@ -192,16 +192,16 @@ def A_matrix_for_ising(allstates):
     A = np.vstack((A,-A))
     return A
 
-def check_joint_consistency(X):
+def check_joint_consistency(X,full_output=False):
     """
-    Given a data set, check whether it is compatible with a real 
-    probability distribution.
+    Given a data set, check whether it is compatible with a real probability distribution.
     
     Parameters
     ----------
     X : ndarray
-        Should be of shape (n_samples, n_spins) where -1 and 1 are up and down and 0 is 
-        a hidden spin.
+        Should be of shape (n_samples, n_spins) where -1 and 1 are up and down and 0 is a hidden
+        spin.
+    full_output : bool,False
     """
     from scipy.optimize import linprog
 
@@ -213,9 +213,10 @@ def check_joint_consistency(X):
         # Check if there are any observations from this subset and calculate pijk if yes.
         subsetIx = state==1
         fullSubsetIx = (X[:,subsetIx]!=0).all(1)
+
         if np.any(fullSubsetIx):
             if subsetIx.sum()==1:
-                pijk[statei] = (X[fullSubsetIx,:][:,subsetIx]==1).mean()
+                pijk[statei] = (X[fullSubsetIx.ravel(),:][:,subsetIx]==1).mean()
             else:
                 pijk[statei] = (X[fullSubsetIx,:][:,subsetIx]==1).all(1).mean()
 
@@ -232,5 +233,7 @@ def check_joint_consistency(X):
                    A_ub=A,
                    b_ub=np.vstack((np.ones(2**n),np.zeros(2**n))),
                    bounds=bounds)
+    if full_output:
+        return soln['success'],soln
     return soln['success']
 # End general functions section
