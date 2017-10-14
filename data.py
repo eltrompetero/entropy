@@ -192,7 +192,7 @@ def A_matrix_for_ising(allstates):
     A = np.vstack((A,-A))
     return A
 
-def check_joint_consistency(X,full_output=False):
+def check_joint_consistency(X,full_output=False,linprog_options={}):
     """
     Given a data set, check whether it is compatible with a real probability distribution.
     
@@ -232,7 +232,8 @@ def check_joint_consistency(X,full_output=False):
     soln = linprog(np.zeros(2**n),
                    A_ub=A,
                    b_ub=np.vstack((np.ones(2**n),np.zeros(2**n))),
-                   bounds=bounds)
+                   bounds=bounds,
+                   options=linprog_options)
     if full_output:
         return soln['success'],soln
     return soln['success']
