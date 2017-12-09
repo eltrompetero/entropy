@@ -1013,7 +1013,7 @@ def nan_calc_sijk(data):
 
     return sijk
 
-def nth_corr(data,n,weighted=False,exclude_empty=False):
+def nth_corr(data,n,weighted=False,exclude_empty=False,return_sample_size=False):
     """
     Compute the nth order correlations in the data.
     
@@ -1026,6 +1026,9 @@ def nth_corr(data,n,weighted=False,exclude_empty=False):
     weighted : bool,False
     exclude_empty : bool,False
         Do not combine with weighted.
+    return_sample_size: bool,False
+        If True, return the number of samples used to calculated the correlations for each data point. This
+        only works for exclude_empty.
 
     Returns
     -------
@@ -1044,20 +1047,37 @@ def nth_corr(data,n,weighted=False,exclude_empty=False):
             arr = data[:,i]
             corr[j] = weighted.dot( np.prod(arr,1) )
             j += 1
-
+        return corr
     else:
-        corr = np.zeros( int(binom(data.shape[1],n)) )
-        j = 0
-        for i in combinations(range(data.shape[1]),n):
-            arr = data[:,i]
-            nonzeroix = (arr!=0).all(1)
-            if nonzeroix.any():
-                corr[j] = np.prod(arr[nonzeroix],1).mean(0)
-            else:
-                corr[j] = np.nan
-            j += 1
+        if return_sample_size:
+            corr = np.zeros( int(binom(data.shape[1],n)) )
+            sampleSize = np.zeros( int(binom(data.shape[1],n)) )
 
-    return corr
+            j = 0
+            for i in combinations(range(data.shape[1]),n):
+                arr = data[:,i]
+                nonzeroix = (arr!=0).all(1)
+                if nonzeroix.any():
+                    corr[j] = np.prod(arr[nonzeroix],1).mean(0)
+                    sampleSize[j] = nonzeroix.sum()
+                else:
+                    corr[j] = np.nan
+                j += 1
+
+            return corr,sampleSize
+        else:
+            corr = np.zeros( int(binom(data.shape[1],n)) )
+            j = 0
+            for i in combinations(range(data.shape[1]),n):
+                arr = data[:,i]
+                nonzeroix = (arr!=0).all(1)
+                if nonzeroix.any():
+                    corr[j] = np.prod(arr[nonzeroix],1).mean(0)
+                else:
+                    corr[j] = np.nan
+                j += 1
+
+            return corr
 
 def convert_sisj(si,sisj,convertTo='11',concat=True):
     """

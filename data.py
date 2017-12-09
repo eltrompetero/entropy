@@ -194,14 +194,15 @@ def A_matrix_for_ising(allstates):
 
 def check_joint_consistency(X,full_output=False,linprog_options={}):
     """
-    Given a data set, check whether it is compatible with a real probability distribution.
+    Given a binary data set with incomplete data points indicated by 0's, check whether it is compatible with
+    a real probability distribution.
     
     Parameters
     ----------
     X : ndarray
-        Should be of shape (n_samples, n_spins) where -1 and 1 are up and down and 0 is a hidden
-        spin.
+        Should be of shape (n_samples, n_spins) where -1 and 1 are up and down and 0 is a hidden spin.
     full_output : bool,False
+    linprog_options : dict,{}
     """
     from scipy.optimize import linprog
 
