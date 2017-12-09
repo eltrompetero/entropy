@@ -192,10 +192,11 @@ def A_matrix_for_ising(allstates):
     A = np.vstack((A,-A))
     return A
 
-def check_joint_consistency(X,full_output=False,linprog_options={}):
+def check_joint_consistency(X,full_output=False,linprog_options={},allstates=None):
     """
-    Given a binary data set with incomplete data points indicated by 0's, check whether it is compatible with
-    a real probability distribution.
+    Given a binary data set with incomplete data points indicated by 0's, check
+    whether or not measurable marginals are compatible with a real probability
+    distribution.
     
     Parameters
     ----------
@@ -203,12 +204,18 @@ def check_joint_consistency(X,full_output=False,linprog_options={}):
         Should be of shape (n_samples, n_spins) where -1 and 1 are up and down and 0 is a hidden spin.
     full_output : bool,False
     linprog_options : dict,{}
+
+    Returns
+    -------
+    success : bool/dcit
+        Returns True if consistent. Can opt to return all details of solution.
     """
     from scipy.optimize import linprog
 
     n = X.shape[1]
-    allstates = bin_states(n)
-    pijk = np.zeros(2**n-1)-1
+    if allstates is None:
+        allstates = bin_states(n)
+    pijk = np.zeros(2**n-1)-1  # measured moments, default value -1
 
     for statei,state in enumerate(allstates[1:]):
         # Check if there are any observations from this subset and calculate pijk if yes.
@@ -220,12 +227,15 @@ def check_joint_consistency(X,full_output=False,linprog_options={}):
                 pijk[statei] = (X[fullSubsetIx.ravel(),:][:,subsetIx]==1).mean()
             else:
                 pijk[statei] = (X[fullSubsetIx,:][:,subsetIx]==1).all(1).mean()
-
+    
+    # Make list of bounds for simplex program.
     # First entry corresponding to normalization.
     bounds = [(1,1)]
     for p in pijk:
+        # Condition without bounds
         if p==-1:
             bounds.append((0,1))
+        # Codition with bounds
         else:
             bounds.append((p,p))
 
