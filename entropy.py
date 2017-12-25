@@ -362,42 +362,6 @@ def fill_in_vote(votes):
 
     return filledVotes,counts
 
-def SMa(data):
-    """
-        Calculate Ma bound on entropy by partitioning the data set according to
-        the number of votes in the majority.
-        See Strong et al. 1998.
-    2014-02-19
-    """
-    from misc_fcns import unique_rows
-
-    majCounts = np.sum(data,1)
-    states = data[unique_rows(data),:]
-    l = states.shape[0]
-    pC = np.zeros((l))
-    pK = np.zeros((l))
-
-    i = 0
-    for k in range(l):
-        ix = majCounts==k
-        if np.sum(ix)>0:
-            pK[i] = np.sum(ix).astype(float)/ix.size
-
-            probs = get_state_probs(data[ix,:],allstates=states)
-            pC[i] = np.sum(probs**2)
-        else:
-            pK[i],pC[i] = 0., 0.
-        i += 1
-    return -np.nansum( pK*np.log2(pK*pC) )
-
-def Snaive(samples):
-    """
-    Calculate entropy in bits.
-    2014-02-19
-    """
-    freq = get_state_probs(samples)
-    return -np.sum(freq*np.log2(freq))
-
 def calc_p_J(J,n):
     """
         Get probabilities of states given the J's.
@@ -815,7 +779,6 @@ def get_state_probs(v,allstates=None,weights=None,normalized=True):
     if v.ndim==1:
         v = v[:,None]
     n = v.shape[1]
-    j = 0
     return_all_states = False
 
     if allstates is None:
@@ -828,10 +791,9 @@ def get_state_probs(v,allstates=None,weights=None,normalized=True):
             weights = np.ones((v.shape[0]))
         
         freq = np.zeros(allstates.shape[0])
-        for vote in allstates:
+        for j,vote in enumerate(allstates):
             ix = ( vote==v ).sum(1)==n
             freq[j] = (ix*weights).sum()
-            j+=1
         if np.isclose(np.sum(freq),np.sum(weights))==0:
             import warnings
             warnings.warn("States not found in given list of all states.")
@@ -1036,7 +998,7 @@ def nth_corr(data,n,weighted=False,exclude_empty=False,return_sample_size=False)
     """
     from itertools import combinations
     from scipy.special import binom
-    assert 1<n<data.shape[1], "n cannot be larger than size of system in data."
+    assert 1<n<=data.shape[1], "n cannot be larger than size of system in data."
     
     if weighted or not exclude_empty:
         weighted = np.ones((data.shape[0]))/data.shape[0]
