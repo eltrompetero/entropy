@@ -131,28 +131,39 @@ def bootstrap_MI(data,ix1,ix2,nIters,sampleFraction=1.):
         miSamples[i] = MI(p)
     return miSamples
 
-@jit(cache=True)
-def joint_p_mat(data,ix1,ix2):
+#@jit(cache=True)
+def joint_p_mat(data,ix1,ix2,extra_states=None):
     """
     Return joint probability matrix between different groups of columns of a data matrix. Works on any type of
     data that can be identified separately by misc.utils.unique_rows().
-    2016-01-12
     
-    Params:
-    -------
-    data (ndarray ndata x ndim)
-    ix1,ix2 (vector)
+    Parameters
+    ----------
+    data : ndarray
+        ndata x ndim
+    ix1,ix2 : list
         Index of columns that correspond to groups of columns to compare.
+    extra_states : list
+        List of states to include into data. This should be a list of two elements. Each element
+        will be appended to data[:,ix2] and data[:,ix2].
     """
     assert len(ix1)>=1 and len(ix2)>=1
     
     data1 = data[:,ix1]
     data2 = data[:,ix2]
+    if not extra_states is None:
+        data1=np.vstack((extra_states[0]))
+        data2=np.vstack((extra_states[1]))
 
     uniq1 = data1[unique_rows(data1)]
     uniq2 = data2[unique_rows(data2)]
     
     p = np.zeros((len(uniq1),len(uniq2)))
+
+    if not extra_states is None:
+        # Remove extra states.
+        data1=data1[:-len(extra_states[0])]
+        data2=data2[:-len(extra_states[1])]
 
     for row,i in enumerate(uniq1):
         for col,j in enumerate(uniq2):
@@ -670,13 +681,12 @@ def calc_sisj(data,weighted=None,concat=False, excludeEmpty=False):
     else:
         return si, sisj
 
-def calc_cij(data,weighted=None,return_square=False,ignorenan=False,subtractmean=True):
+def pair_corr(data,weighted=None,return_square=False,ignorenan=False,subtractmean=True):
     """
-    Each sample state along a row. This is the correlation matrix <sisj>-<si><sj>.
-    2016-12-28
+    Calculate thecorrelation matrix <sisj>-<si><sj>.
 
-    Params:
-    -------
+    Parameters
+    ----------
     data (ndarray)
     **kwargs:
     weighted (np.ndarray,None) : 
@@ -690,9 +700,11 @@ def calc_cij(data,weighted=None,return_square=False,ignorenan=False,subtractmean
     subtractmean (bool=True)
         Subtract product of means <si><sj>.
 
-    Value:
-    ------
-    (cij,cijMat)
+    Returns
+    -------
+    cij : ndarray
+    cijMat : ndarray
+        Only returned if return_square is True.
     """
     (S,N) = data.shape
     cij = np.zeros(N*(N-1)//2)
