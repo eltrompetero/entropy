@@ -100,6 +100,32 @@ class DiscreteEntropy(object):
 # end DiscreteEntropy
 
 
+
+
+def extract_unique_n_groups(n,X):
+    """Extract unique nth tuples from data assuming 0's are missing data.
+    Parameters
+    ----------
+    n : int
+        Size of subgroups.
+    X : ndarray
+        n_samples,n_dim
+    """
+    from itertools import combinations
+
+    ix=X[unique_rows(X!=0)]
+    ix=[np.where(i!=0)[0] for i in ix]
+    # For every subset with size >n, iterate through all subsets of size n.
+    subsets=[]
+    for i in ix:
+        if len(i)>n:
+            for c in combinations(i,n):
+                subsets.append(c)
+        elif len(i)==n:
+            subsets.append(i)
+    ix=np.vstack(subsets)
+    return ix[unique_rows(ix)]
+
 def enumerate_states(x):
     """
     Given data array x, assign a unique integer label to each row.
@@ -417,46 +443,44 @@ def get_p_maj(data, allmajstates=None,kmx=None):
 
     return pk[::-1],np.arange(np.ceil(n/2.),n+1)
 
-def convert_to_maj(states, maj0or1=1):
+def convert_to_maj(X, maj0or1=1):
     """
-    Convert given states such that 0 or 1 corresponds to the majority vote. Split
-    votes are left as they are.
+    Convert given X such that 0 or 1 corresponds to the majority vote. Split votes are left as
+    they are. Handles cases where there are missing X as indicated by zeros assuming that there
+    are also {-1,1}. Missing X are not handled for {0,1} data sets.
 
-    Params:
+    Parameters
+    ----------
+    X : ndarray
+    maj0or1 : bool,True
+
+    Returns
     -------
-    states:
-    *kwargs
-    maj0or1 (bool=True)
-
-    Returns:
-    --------
-    states
+    majX
         States converted to majority vote.
     """
-    uS = np.unique(states)
-    asymCase = np.array_equal( uS,np.array([0.,1.]) ) or (len(uS)==1 and ( uS==0 or uS==1 ))
-    symCase = np.array_equal( uS,np.array([-1.,1.]) ) or (len(uS)==1 and ( uS==-1 or uS==1 ))
+    assert frozenset(np.unique(X))<=frozenset([-1,0,1])
+    if (X==-1).any():
+        symCase=True
+    else:
+        symCase=False
 
-    if not (asymCase or symCase):
-            raise Exception("This function can only deal with {0,1} or {-1,+1}.")
-    states = states.copy()
-    if symCase:
-        states = (states+1)/2
-
-    # In case where we are given one state.
-    if states.ndim==1:
-        states = np.expand_dims(states,0)
-    n = states.shape[1]
-    ix = np.sum(states,1) < np.ceil(n/2.)
-    states[ix,:] = 1-states[ix,:]
-
+    if not symCase:
+        X=X*2-1
+    
+    signOfMaj=np.sign(X.sum(1))
+    signOfMaj[signOfMaj==0]=1
+    X=X*signOfMaj[:,None]
+    
     if maj0or1==0:
-        states = 1-states
+        untiedIx=(X.sum(1))!=0
+        X[untiedIx]*=-1
+    
+    # Convert back to {0,1} basis if that's what we started with.
+    if not symCase:
+        X=(X+1)/2
 
-    if symCase:
-        states = states*2-1
-
-    return states
+    return X
 
 def xbin_states(n,sym=False):
     """Generator for producing binary states.
@@ -999,7 +1023,7 @@ def nth_corr(data,n,weighted=False,exclude_empty=False,return_sample_size=False)
         Order of correlation to compute.
     weighted : bool,False
     exclude_empty : bool,False
-        Do not combine with weighted.
+        If True, exclude 0 entries.
     return_sample_size: bool,False
         If True, return the number of samples used to calculated the correlations for each data point. This
         only works for exclude_empty.
@@ -1012,9 +1036,10 @@ def nth_corr(data,n,weighted=False,exclude_empty=False,return_sample_size=False)
     from scipy.special import binom
     assert 1<n<=data.shape[1], "n cannot be larger than size of system in data."
     
-    if weighted or not exclude_empty:
-        weighted = np.ones((data.shape[0]))/data.shape[0]
-        
+    if np.any(weighted) or not exclude_empty:
+        if not np.any(weighted):
+            weighted = np.ones((data.shape[0]))/data.shape[0]
+            
         corr = np.zeros( int(binom(data.shape[1],n)) )
         j = 0
         for i in combinations(range(data.shape[1]),n):
