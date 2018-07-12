@@ -1,6 +1,6 @@
 # Module for entropy estimators.
 import numpy as np
-from entropy import *
+from .entropy import *
 from warnings import warn
 
 def S_ma(data):
@@ -46,13 +46,13 @@ def S_quad(X,sample_fraction,n_boot,X_is_count=False):
         If X is not a sample but a count of each state in the data.
     """
     estS = np.zeros((len(sample_fraction),n_boot))
-    ix = range(len(X))
+    ix = list(range(len(X)))
     
     if X_is_count:
         pState = X/X.sum()
 
         for i,f in enumerate(sample_fraction):
-            for j in xrange(n_boot):
+            for j in range(n_boot):
                 bootSample = np.random.choice(ix,size=int(f*X.sum()),p=pState)
                 p = state_probs(bootSample[:,None])[0]
                 estS[i,j] = -(p*np.log2(p)).sum()
@@ -60,7 +60,7 @@ def S_quad(X,sample_fraction,n_boot,X_is_count=False):
         fit = np.polyfit(1/np.around(sample_fraction*X.sum()),estS.mean(1),2)
     else:
         for i,f in enumerate(sample_fraction):
-            for j in xrange(n_boot):
+            for j in range(n_boot):
                 bootSample = np.random.choice(ix,size=int(f*len(X)))
                 p = state_probs(bootSample[:,None])[0]
                 estS[i,j] = -(p*np.log2(p)).sum()
@@ -101,13 +101,13 @@ def fractional_dkl_quad(X,sample_fraction,n_boot,q,X_is_count=False,return_estF=
         (Optional) Estimated fractional DKL captured for bootstrap samples. (n_fraction,n_boot).
     """
     estF = np.zeros((len(sample_fraction),n_boot))
-    ix = range(len(X))
+    ix = list(range(len(X)))
     
     if X_is_count:
         pState = X/X.sum()
 
         for i,f in enumerate(sample_fraction):
-            for j in xrange(n_boot):
+            for j in range(n_boot):
                 bootSample = np.random.choice(ix,size=int(f*X.sum()),p=pState)
                 p = state_probs( bootSample[:,None],allstates=np.array(ix) )
                 estF[i,j] = 2-(p*np.log2(q)).sum()/np.nansum(p*np.log2(p))
@@ -123,7 +123,7 @@ def fractional_dkl_quad(X,sample_fraction,n_boot,q,X_is_count=False,return_estF=
         assert np.polyval(fit,0)>np.polyval(fit,1/X.sum())
     else:
         for i,f in enumerate(sample_fraction):
-            for j in xrange(n_boot):
+            for j in range(n_boot):
                 bootSample = np.random.choice(ix,size=int(f*len(X)))
                 p = state_probs(bootSample[:,None])[0]
                 estF[i,j] = 2-(p*np.log2(q)).sum()/np.nansum(p*np.log2(p))

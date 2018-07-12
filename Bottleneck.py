@@ -1,5 +1,5 @@
-from __future__ import division
-from entropy import *
+
+from .entropy import *
 from scipy.optimize import minimize,fmin
 from pathos.multiprocessing import cpu_count,Pool
 import numpy as np
@@ -128,7 +128,7 @@ class Bottleneck(object):
     
     def define_Deltas(self,clusterAssignP,Si):
         self.Deltas = np.zeros((self.Nc,2,len(Si)))
-        for i in xrange(self.Nc):
+        for i in range(self.Nc):
             self.Deltas[i,:,:] = self.calc_Delta_for_Si( clusterAssignP[i],Si,np.array([-1.,1.]) )
 
     def bottleneck_term(self,PSi,Si,Sc=None):
@@ -245,10 +245,10 @@ class Bottleneck(object):
         
         if nJobs>0:
             p = Pool(nJobs)
-            Solns = p.map( f,range(nIters) )
+            Solns = p.map( f,list(range(nIters)) )
         else:
             Solns = []
-            for i in xrange(nIters):
+            for i in range(nIters):
                 Solns.append( f(i) )
         
         return Solns
@@ -292,7 +292,7 @@ def L(PofCgivenI,T,Nc,v,iprint=False):
 
     # For each cluster, compute the information it has about the average outcome.
     clustersVote = np.zeros((K,Nc))
-    for i in xrange(Nc):
+    for i in range(Nc):
         clustersVote[:,i] = (PofCgivenI[:,i][None,:]*v).sum(1)
     clustersVote[np.isclose(clustersVote,0)] = 0.
     clustersVote = np.sign(clustersVote)
@@ -302,8 +302,8 @@ def L(PofCgivenI,T,Nc,v,iprint=False):
     cost = Snaive(clustersVote)
     
     if iprint:
-        print "info %f" %info
-        print "cost %f"%cost
+        print("info %f" %info)
+        print("cost %f"%cost)
     return info - T*cost
 
 def wrap_L(params,T,Nc,v):
@@ -344,7 +344,7 @@ def solve_parallel(nSolns,T,Nc,v,nJobs=None,**kwargs):
         return solve(T,Nc,v,rng=rng,**kwargs)
 
     p = Pool(nJobs)
-    Solutions = p.map(wrapped_solve,range(nSolns))
+    Solutions = p.map(wrapped_solve,list(range(nSolns)))
     p.close()
     return Solutions
 

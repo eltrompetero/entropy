@@ -1,6 +1,6 @@
 # Functions necessary for calculating entropies.
 # 2013-06-25
-from __future__ import division
+
 import numpy as np
 #import clusters as cluster
 from numba import jit
@@ -60,7 +60,7 @@ class DiscreteEntropy(object):
         self._estimate_pdf(X)
         disclabel = np.zeros_like(X,dtype=int)
         for i,x in enumerate(X):
-            for j in xrange(self.ndim):
+            for j in range(self.ndim):
                 disclabel[i] = [bisect(self.edges[j],x_,hi=len(self.edges[j])-2) for x_ in x]
         return unique_rows(disclabel,return_inverse=True)
         
@@ -84,13 +84,13 @@ class DiscreteEntropy(object):
             S = []
             bins=[binRange[0]]*self.ndim
             k = 0
-            for i in xrange(binRange[0],binRange[1]):
+            for i in range(binRange[0],binRange[1]):
                 if i==binRange[0]:
                     self._estimate_pdf(X,bins)
                     S.append([-np.nansum( self.pdf*np.log2(self.pdf) )])
                     k += 1
                 S.append([])
-                for j in xrange(self.ndim):
+                for j in range(self.ndim):
                     bins[j] += 1
                     self._estimate_pdf(X,bins)
                     S[-1].append( -np.nansum( self.pdf*np.log2(self.pdf) ) )
@@ -151,7 +151,7 @@ def bootstrap_MI(data,ix1,ix2,nIters,sampleFraction=1.):
     """
     miSamples = np.zeros((nIters))
 
-    for i in xrange(nIters):
+    for i in range(nIters):
         samples = data[np.random.randint(len(data),size=int(sampleFraction*len(data)))]
         p = joint_p_mat(samples,ix1,ix2)
         miSamples[i] = MI(p)
@@ -251,8 +251,8 @@ def cluster_probabilities(data,order):
                          for col in data.T])
     elif order==2:
         pairsP = []
-        for i in xrange(n-1):
-            for j in xrange(i+1,n):
+        for i in range(n-1):
+            for j in range(i+1,n):
                 nVotesCast = np.sum(np.logical_and(data[:,i]!=0,data[:,j]!=0))
                 pairsP.append([ np.sum(np.logical_and(data[:,i]==1,data[:,j]==1)),
                                 np.sum(np.logical_and(data[:,i]==1,data[:,j]==-1)),
@@ -285,8 +285,8 @@ def MI(pmat):
         return np.nan
     
     k = 0
-    for i in xrange(pmat.shape[0]):
-        for j in xrange(pmat.shape[1]):
+    for i in range(pmat.shape[0]):
+        for j in range(pmat.shape[1]):
             if pmat[i,j]==0:
                 mi[k] = 0 
             else:
@@ -495,7 +495,7 @@ def xbin_states(n,sym=False):
     assert n>0, "n cannot be <0"
     
     def v():
-        for i in xrange(2**n):
+        for i in range(2**n):
             if sym is False:
                 yield np.array(list(np.binary_repr(i,width=n))).astype('int')
             else:
@@ -614,7 +614,7 @@ def xcalc_sisj(data,weighted=None,concat=False):
             while True:
                 yield 1.
         weighted = f()
-    data0 = data.next()
+    data0 = next(data)
     n = len(data0)
     si,sisj = np.zeros((n)),np.zeros((n*(n-1)//2))
     
@@ -622,28 +622,28 @@ def xcalc_sisj(data,weighted=None,concat=False):
     #@jit(nopython=True)
     def inside_loop(sisj,d,n,thisWeight):
         counter = 0
-        for i in xrange(n-1):
-            for j in xrange(i+1,n):
+        for i in range(n-1):
+            for j in range(i+1,n):
                 sisj[counter] += d[i]*d[j]*thisWeight
                 counter+=1
 
     def loop(si,sisj,data,weighted):
         ndata = 0
         for d in data:
-            thisWeight = weighted.next()
+            thisWeight = next(weighted)
             si += d*thisWeight
             inside_loop(sisj,d,n,thisWeight) 
             ndata += 1
         return ndata
     
     # Calculate correlations.
-    thisWeight = weighted.next()
+    thisWeight = next(weighted)
     si += data0*thisWeight
     inside_loop(sisj,data0,n,thisWeight)
     ndata = loop(si,sisj,data,weighted) + 1
     
     try:
-        weighted.next()
+        next(weighted)
         si /= ndata
         sisj /= ndata
     except StopIteration:
@@ -687,15 +687,15 @@ def calc_sisj(data,weighted=None,concat=False, excludeEmpty=False):
         assert np.array_equal( np.unique(data),np.array([-1,0,1]) ) or \
             np.array_equal( np.unique(data),np.array([-1,1]) ), "Only handles -1,1 data sets."
         k=0
-        for i in xrange(N-1):
-            for j in xrange(i+1,N):
+        for i in range(N-1):
+            for j in range(i+1,N):
                 sisj[k] = np.nansum(data[:,i]*data[:,j]) / np.nansum(np.logical_and(data[:,i]!=0,data[:,j]!=0))
                 k+=1
         si = np.array([ np.nansum(col[col!=0]) / np.nansum(col!=0) for col in data.T ])
     else:
         k=0
-        for i in xrange(N-1):
-            for j in xrange(i+1,N):
+        for i in range(N-1):
+            for j in range(i+1,N):
                 sisj[k] = np.nansum(data[:,i]*data[:,j]*weighted)
                 k+=1
         si = np.nansum(data*weighted[:,None],0)
@@ -854,7 +854,7 @@ def calc_sn(n,S):
         Sn.append( np.sum( S[0] ) )
     if n>=2:
         Sn.append(Sn[0])
-        for index in combinations( range(N),2 ):
+        for index in combinations( list(range(N)),2 ):
             i,j = index
             s = S[0][i]+S[0][j] -S[1][i,j]
 #            if not np.isnan(s):
@@ -863,14 +863,14 @@ def calc_sn(n,S):
 #                print 1
     if n>=3:
         Sn.append(Sn[1])
-        for index in combinations( range(N),3 ):
+        for index in combinations( list(range(N)),3 ):
             i,j,k = index
             s = S[0][i]+S[0][j]+S[0][k] -S[1][i,j]-S[1][j,k]-S[1][i,k] \
                     +S[2][i,j,k]
 #            if not np.isnan(s):
             Sn[2] += s
     if n>=4:
-        for index in combinations( range(N),4 ):
+        for index in combinations( list(range(N)),4 ):
             i,j,k,l = index
             s = S[0][i]+S[0][j]+S[0][k]+S[0][l] \
                 -S[1][i,j]-S[1][i,k]-S[1][i,l]-S[1][j,k]-S[1][j,l]-S[1][k,l] \
@@ -910,7 +910,7 @@ def calc_ds(H):
     if n>=3:
         dH.append( np.zeros((n,n,n)))
         l=0
-        for index in combinations(range(n),3):
+        for index in combinations(list(range(n)),3):
             i,j,k = index
     return dH
 
@@ -931,7 +931,7 @@ def calc_s(n,p):
     if n>=2:
         k=0
         S.append(np.zeros((n,n)) )
-        for index in combinations(range(p[0].size),2):
+        for index in combinations(list(range(p[0].size)),2):
             i,j = index
 
 #            print p[0][i]-p[1][i,j],p[0][j]-p[1][i,j],1-p[0][i]-p[0][j]+p[1][i,j]
@@ -946,12 +946,12 @@ def calc_s(n,p):
 
                 if len(w):
                     # do something with the first warning
-                    print i,j
-                    print p[1][i,j],p[0][i]-p[1][i,j],p[0][j]-p[1][i,j],1-p[0][i]-p[0][j]+p[1][i,j]
+                    print(i,j)
+                    print(p[1][i,j],p[0][i]-p[1][i,j],p[0][j]-p[1][i,j],1-p[0][i]-p[0][j]+p[1][i,j])
     if n>=3:
         l=0
         S.append(np.zeros((n,n,n)))
-        for index in combinations(range(p[0].size),3):
+        for index in combinations(list(range(p[0].size)),3):
             i,j,k = index
             with warnings.catch_warnings(record=True) as w:
                 warnings.simplefilter("always")
@@ -964,7 +964,7 @@ def calc_s(n,p):
                     (p[0][k]-p[1][i,k]-p[1][j,k]+p[2][i,j,k])*np.log2(p[0][k]-p[1][i,k]-p[1][j,k]+p[2][i,j,k]), \
                     (1-p[0][i]-p[0][j]-p[0][k]+p[1][i,j]+p[1][i,k]+p[1][j,k]-p[2][i,j,k])*np.log2(1-p[0][i]-p[0][j]-p[0][k]+p[1][i,j]+p[1][i,k]+p[1][j,k]-p[2][i,j,k])])
             if len(w):
-                print i,j,k
+                print(i,j,k)
     return S
 
 def calc_sijk(data,vecout=False,weighted=False):
@@ -981,13 +981,13 @@ def calc_sijk(data,vecout=False,weighted=False):
     if vecout:
         sijk = np.zeros((binom(n,3)))
         j = 0
-        for i in combinations(range(n),3):
+        for i in combinations(list(range(n)),3):
             sijk[j] = np.sum(weighted*(data[:,i[0]]*data[:,i[1]]*data[:,i[2]]))
             j += 1
     else:
         sijk = np.zeros((n,n,n))
 
-        for i in combinations(range(n),3):
+        for i in combinations(list(range(n)),3):
             sijk[i[0],i[1],i[2]] = np.sum(weighted*(
                 data[:,i[0]]*data[:,i[1]]*data[:,i[2]]))
     return sijk
@@ -1004,7 +1004,7 @@ def nan_calc_sijk(data):
     sijk = np.zeros((n,n,n))
     l=0
 
-    for i in combinations(range(n),3):
+    for i in combinations(list(range(n)),3):
         ijk = data[:,i[0]]*data[:,i[1]]*data[:,i[2]]
         sijk[i[0],i[1],i[2]] = np.nansum(ijk)/float(np.sum(np.isnan(ijk)==0))
         l+=1
@@ -1042,7 +1042,7 @@ def nth_corr(data,n,weighted=False,exclude_empty=False,return_sample_size=False)
             
         corr = np.zeros( int(binom(data.shape[1],n)) )
         j = 0
-        for i in combinations(range(data.shape[1]),n):
+        for i in combinations(list(range(data.shape[1])),n):
             arr = data[:,i]
             corr[j] = weighted.dot( np.prod(arr,1) )
             j += 1
@@ -1053,7 +1053,7 @@ def nth_corr(data,n,weighted=False,exclude_empty=False,return_sample_size=False)
             sampleSize = np.zeros( int(binom(data.shape[1],n)) )
 
             j = 0
-            for i in combinations(range(data.shape[1]),n):
+            for i in combinations(list(range(data.shape[1])),n):
                 arr = data[:,i]
                 nonzeroix = (arr!=0).all(1)
                 if nonzeroix.any():
@@ -1067,7 +1067,7 @@ def nth_corr(data,n,weighted=False,exclude_empty=False,return_sample_size=False)
         else:
             corr = np.zeros( int(binom(data.shape[1],n)) )
             j = 0
-            for i in combinations(range(data.shape[1]),n):
+            for i in combinations(list(range(data.shape[1])),n):
                 arr = data[:,i]
                 nonzeroix = (arr!=0).all(1)
                 if nonzeroix.any():

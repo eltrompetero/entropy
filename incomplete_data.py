@@ -1,9 +1,9 @@
 # Module for extracting information from data sets or checking them.
 # Edward D. Lee, edl56@cornell.edu
 # 2017-09-28
-from __future__ import division
+
 import numpy as np
-from entropy import bin_states
+from .entropy import bin_states
 
 # ============================================================================================== #
 # Missing data.
@@ -126,7 +126,7 @@ def check_triplet(X,full_output=False):
             pijmn,pijmx,pijkmn,pijkmx = _bounds_case_p23(X[:,ixOrder])
         except AssertionError:
             if full_output:
-                print "Bounds error"
+                print("Bounds error")
             return False
         pij = (X[:,ixOrder[1:]]==1).all(1).sum() / X[:,ixOrder[1:]].all(1).sum()
         

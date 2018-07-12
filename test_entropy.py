@@ -1,4 +1,4 @@
-from entropy import *
+from .entropy import *
 
 def test_convert_to_maj():
     """Some test for {-1,1} case."""

@@ -1,6 +1,6 @@
 # Module for calculating transfer entropy. Since calculating this requires many parameters, this implemenation
 # makes a TransferEntropy class that can hold the parameter and run calculations.
-from __future__ import division
+
 import numpy as np
 from sklearn.cluster import KMeans
 from multiprocessing import Queue,Array,Process
@@ -20,7 +20,7 @@ class TransferEntropy(object):
         2015-12-21
         """
         workers = []
-        for i in xrange(self.N_WORKERS):
+        for i in range(self.N_WORKERS):
             p = Process( target=workerFunction, args=(workQueue,storage,) )
             p.start()
             workers.append( p )
@@ -87,7 +87,7 @@ class TransferEntropy(object):
         future = np.zeros((x.shape[0]-kPastMx-kFuture+1,kFuture))
         past = np.zeros((x.shape[0]-kPastMx-kFuture+1,kPast))
         otherPast = np.zeros((x.shape[0]-kPastMx-kFuture+1,kPastOther))
-        for i in xrange(future.shape[0]):
+        for i in range(future.shape[0]):
             future[i,:] = y[(i+kPastMx):(i+kPastMx+kFuture)]
             past[i,:] = y[(i+kPastMx-kPast):(i+kPastMx)]
             otherPast[i,:] = x[(i+kPastMx-kPastOther):(i+kPastMx)]
@@ -171,7 +171,7 @@ class TransferEntropy(object):
         future = np.zeros((x.shape[0]-kPastMx-kFuture+1,kFuture))
         past = np.zeros((x.shape[0]-kPastMx-kFuture+1,kPast))
         otherPast = np.zeros((x.shape[0]-kPastMx-kFuture+1,kPastOther))
-        for i in xrange(future.shape[0]):
+        for i in range(future.shape[0]):
             future[i,:] = y[(i+kPastMx):(i+kPastMx+kFuture)]
             past[i,:] = y[(i+kPastMx-kPast):(i+kPastMx)]
             otherPast[i,:] = x[(i+kPastMx-kPastOther):(i+kPastMx)]
@@ -243,7 +243,7 @@ class TransferEntropy(object):
             for i,row in enumerate(uniqxy):
                 workQueue.put( [i,row] )
             # Place one sentinel for each worker so it stops waiting for the queue to fill.
-            for i in xrange(self.N_WORKERS):
+            for i in range(self.N_WORKERS):
                 workQueue.put( None )
             return workQueue
 
