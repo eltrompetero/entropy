@@ -123,17 +123,18 @@ def S_quad(X, sample_fraction, n_boot,
     ix = list(range(len(X)))
     
     if X_is_count:
-        assert X.sum()>1, "Must provide more than one state to calculate bootstrap."
-        pState = X/X.sum()
+        Xsum = X.sum()
+        assert Xsum>1, "Must provide more than one state to calculate bootstrap."
+        pState = X/Xsum
 
         for i,f in enumerate(sample_fraction):
             for j in range(n_boot):
-                bootSample = rng.choice(ix, size=int(f*X.sum()), p=pState)
-                p = np.unique(bootSample, return_counts=True)[1] / int(f*X.sum())
+                bootSample = rng.choice(ix, size=int(f*Xsum), p=pState)
+                p = np.unique(bootSample, return_counts=True)[1] / int(f*Xsum)
                 estS[i,j] = -(p*np.log2(p)).sum()
 
-        fit = np.polyfit(1/np.around(sample_fraction*X.sum()), estS.mean(1),2)
-        err = np.polyval(fit, 1/np.around(sample_fraction*X.sum())) - estS.mean(1)
+        fit = np.polyfit(1/np.around(sample_fraction*Xsum), estS.mean(1),2)
+        err = np.polyval(fit, 1/np.around(sample_fraction*Xsum)) - estS.mean(1)
     else:
         for i,f in enumerate(sample_fraction):
             for j in range(n_boot):
