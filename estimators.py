@@ -129,7 +129,7 @@ def S_quad(X, sample_fraction, n_boot,
         for i,f in enumerate(sample_fraction):
             for j in range(n_boot):
                 bootSample = rng.choice(ix, size=int(f*X.sum()), p=pState)
-                p = np.unique(bootSample, return_count=True)[1] / int(f*X.sum())
+                p = np.unique(bootSample, return_counts=True)[1] / int(f*X.sum())
                 estS[i,j] = -(p*np.log2(p)).sum()
 
         fit = np.polyfit(1/np.around(sample_fraction*X.sum()), estS.mean(1),2)
@@ -138,7 +138,7 @@ def S_quad(X, sample_fraction, n_boot,
         for i,f in enumerate(sample_fraction):
             for j in range(n_boot):
                 bootSample = rng.choice(ix,size=int(f*len(X)))
-                p = np.unique(bootSample, return_count=True)[1] / int(f*X.sum())
+                p = np.unique(bootSample, return_counts=True)[1] / int(f*X.sum())
                 estS[i,j] = -(p*np.log2(p)).sum()
     
         fit = np.polyfit(1/np.around(sample_fraction*len(X)), estS.mean(1), 2)
