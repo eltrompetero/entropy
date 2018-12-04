@@ -88,7 +88,78 @@ def S_ma(data):
 def S_quad(X, sample_fraction, n_boot,
            X_is_count=False,
            return_fit=False,
-           rng=None):
+           rng=None,
+           parallel=False):
+    """
+    Calculate entropy using quadratic extrapolation to infinite data size. The points used to make the
+    extrapoation are given in sample_fraction.
+
+    Parameters
+    ----------
+    X : ndarray
+        Either a list of indices specifying states or a list of the number of times each state occurs labeled
+        by the array index.
+    sample_fraction : ndarray
+        Fraction of sample to use to extrapolate entropy to infinite sample size.
+    n_boot : int
+        Number of times to bootstrap sample to estimate mean entropy at each sample size.
+    X_is_count : bool, False
+        If X is not a sample but a count of each state in the data.
+    return_fit : bool, False
+        If True, return statistics of quadratic fit.
+    rng : np.random.RandomState, None
+    parallel : bool, False
+
+    Returns
+    -------
+    float
+        Estimated entropy in bits.
+    ndarray, optional
+        Coefficients for quadratic fit.
+    float, optional
+        Fit error.
+    """
+    
+    if parallel:
+        return _S_quad_parallel(X, sample_fraction, n_boot,
+                                X_is_count,
+                                return_fit)
+
+    rng = rng or np.random
+    estS = np.zeros((len(sample_fraction),n_boot))
+    ix = list(range(len(X)))
+    
+    if X_is_count:
+        Xsum = X.sum()
+        assert Xsum>1, "Must provide more than one state to calculate bootstrap."
+        pState = X/Xsum
+
+        for i,f in enumerate(sample_fraction):
+            for j in range(n_boot):
+                bootSample = rng.choice(ix, size=int(f*Xsum), p=pState)
+                p = np.unique(bootSample, return_counts=True)[1] / int(f*Xsum)
+                estS[i,j] = -(p*np.log2(p)).sum()
+
+        fit = np.polyfit(1/np.around(sample_fraction*Xsum), estS.mean(1),2)
+        err = np.polyval(fit, 1/np.around(sample_fraction*Xsum)) - estS.mean(1)
+    else:
+        for i,f in enumerate(sample_fraction):
+            for j in range(n_boot):
+                bootSample = rng.choice(ix,size=int(f*len(X)))
+                p = np.unique(bootSample, return_counts=True)[1] / int(f*X.sum())
+                estS[i,j] = -(p*np.log2(p)).sum()
+    
+        fit = np.polyfit(1/np.around(sample_fraction*len(X)), estS.mean(1), 2)
+        err = np.polyval(fit, 1/np.around(sample_fraction*X.sum())) - estS.mean(1)
+
+    if return_fit:
+        return np.polyval(fit,0), fit, err
+    return np.polyval(fit,0)
+
+def _S_quad_parallel(X, sample_fraction, n_boot,
+                   X_is_count=False,
+                   return_fit=False,
+                   rng=None):
     """
     Calculate entropy using quadratic extrapolation to infinite data size. The points used to make the
     extrapoation are given in sample_fraction.
@@ -118,6 +189,7 @@ def S_quad(X, sample_fraction, n_boot,
         Fit error.
     """
     
+    from multiprocess import Pool, cpu_count
     rng = rng or np.random
     estS = np.zeros((len(sample_fraction),n_boot))
     ix = list(range(len(X)))
@@ -126,22 +198,36 @@ def S_quad(X, sample_fraction, n_boot,
         Xsum = X.sum()
         assert Xsum>1, "Must provide more than one state to calculate bootstrap."
         pState = X/Xsum
-
-        for i,f in enumerate(sample_fraction):
+        
+        def g(args):
+            f, rng = args
+            estS = np.zeros(n_boot)
             for j in range(n_boot):
                 bootSample = rng.choice(ix, size=int(f*Xsum), p=pState)
                 p = np.unique(bootSample, return_counts=True)[1] / int(f*Xsum)
-                estS[i,j] = -(p*np.log2(p)).sum()
+                estS[j] = -(p*np.log2(p)).sum()
+            return estS
+
+        pool = Pool(cpu_count()-1)
+        estS = np.vstack(pool.map( g, [(f,np.random.RandomState()) for f in sample_fraction] ))
+        pool.close()
 
         fit = np.polyfit(1/np.around(sample_fraction*Xsum), estS.mean(1),2)
         err = np.polyval(fit, 1/np.around(sample_fraction*Xsum)) - estS.mean(1)
     else:
-        for i,f in enumerate(sample_fraction):
+        def g(args):
+            f, rng = args
+            estS = np.zeros(n_boot)
             for j in range(n_boot):
                 bootSample = rng.choice(ix,size=int(f*len(X)))
                 p = np.unique(bootSample, return_counts=True)[1] / int(f*X.sum())
-                estS[i,j] = -(p*np.log2(p)).sum()
-    
+                estS[j] = -(p*np.log2(p)).sum()
+            return estS
+
+        pool = Pool(cpu_count()-1)
+        estS = np.vstack(pool.map( g, [(f,np.random.RandomState()) for f in sample_fraction] ))
+        pool.close()
+
         fit = np.polyfit(1/np.around(sample_fraction*len(X)), estS.mean(1), 2)
         err = np.polyval(fit, 1/np.around(sample_fraction*X.sum())) - estS.mean(1)
 
