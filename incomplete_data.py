@@ -59,13 +59,19 @@ def _bounds_case_p23(X):
     mn,mx : floats
         Bounds on p123.
     """
-    # Get all probabilities except for p123 which we are trying to bound.
-    p12 = (X[:,:2]==1).all(1).sum() / X[:,:2].all(1).sum()
-    p13 = (X[:,[0,2]]==1).all(1).sum() / X[:,[0,2]].all(1).sum()
-    p1 = (X[:,0]==1).sum() / (X[:,0]!=0).sum()
-    p2 = (X[:,1]==1).sum() / (X[:,1]!=0).sum()
-    p3 = (X[:,2]==1).sum() / (X[:,2]!=0).sum()
     
+    if type(X) is np.ndarray:
+        # Get all probabilities except for p123 which we are trying to bound.
+        p12 = (X[:,:2]==1).all(1).sum() / X[:,:2].all(1).sum()
+        p13 = (X[:,[0,2]]==1).all(1).sum() / X[:,[0,2]].all(1).sum()
+        p1 = (X[:,0]==1).sum() / (X[:,0]!=0).sum()
+        p2 = (X[:,1]==1).sum() / (X[:,1]!=0).sum()
+        p3 = (X[:,2]==1).sum() / (X[:,2]!=0).sum()
+    elif type(X) is tuple:
+        p1, p2, p3 = X[0]
+        p12, p13 = X[1]
+    else: raise Exception("Invalid type for X.")
+        
     # Check bounds on p123 by iterating through all the conditions and checking that 
     # the value of p123 doesn't exceed the bounds.
     mn23,mx23 = 0.,1.
@@ -88,7 +94,7 @@ def _bounds_case_p23(X):
     check_bound(-mx123+mn23-1-p12-p13+p1+p2+p3,
                 1-mn123+mx23-1-p12-p13+p1+p2+p3,0,1);
     
-    return mn23,mx23,mn123,mx123
+    return mn23, mx23, mn123, mx123
 
 def check_bound(mn,mx,newmn,newmx):
     """Convenience function for checking bounds."""
@@ -106,37 +112,74 @@ def did_all_pairs_vote(X,i,j,k):
         return True
     return False
 
-def check_triplet(X,full_output=False):
+def check_triplet(X, full_output=False):
     """
-    Check triplet correlations, i.e. make sure that pij agrees with pik and pjk.
-    All of the random examples below should work since the distribution is well defined.
+    Check one triplet for consistent correlations, i.e. make sure that pij agrees with pik
+    and pjk.  All of the random examples below should work since the distribution is well
+    defined.
 
     Parameters
     ----------
-    X : ndarray
-        n_sample,3 in terms of {-1,1} and empty data points are labeled with 0
+    X : ndarray or tuple
+        If ndarray, should be of dimensions (n_sample, 3) in terms of {-1,1} and empty
+        data points are labeled with 0.  
+        If tuple, give <si> then <sisj> in terms of {0,1} basis.
+    full_output : bool, False
 
     Returns
     -------
     bool
         True if distribution is consistent and False if not.
+    tuple, optional
+    ndarray, optional
     """
-    for ixOrder in [[0,1,2],[1,0,2],[2,0,1]]:
-        try:
-            pijmn,pijmx,pijkmn,pijkmx = _bounds_case_p23(X[:,ixOrder])
-        except AssertionError:
-            if full_output:
-                print("Bounds error")
-            return False
-        pij = (X[:,ixOrder[1:]]==1).all(1).sum() / X[:,ixOrder[1:]].all(1).sum()
-        
-        # Accounting for numerical precision errors.
-        pijmn,pijmx,pij = np.around(pijmn,10),np.around(pijmx,10),np.around(pij,10)
-        if not (pijmn<=pij<=pijmx):
-            if full_output:
-                return False,(pijmn,pijmx),pij
-            return False
-    return True
+    
+    if type(X) is np.ndarray:
+        assert X.shape[1]==3
+
+        # check all possible triplets
+        for ixOrder in [[0,1,2],[1,0,2],[2,0,1]]:
+            try:
+                pijmn, pijmx, pijkmn, pijkmx = _bounds_case_p23(X[:, ixOrder])
+            except AssertionError:
+                if full_output:
+                    print("Bounds error")
+                return False
+            pij = (X[:,ixOrder[1:]]==1).all(1).sum() / X[:,ixOrder[1:]].all(1).sum()
+            
+            # Accounting for numerical precision errors.
+            pijmn, pijmx, pij = np.around(pijmn, 10), np.around(pijmx, 10), np.around(pij, 10)
+            if not (pijmn<=pij<=pijmx):
+                if full_output:
+                    return False, (pijmn,pijmx), pij
+                return False
+        return True
+
+    elif type(X) is tuple:
+        assert len(X)==2
+        assert (X[0]>=0).all() and (X[1]>=0).all()
+
+        # check all possible orderings of correlations
+        for ixOrder1,ixOrder2 in zip([[0,1,2],[1,0,2],[2,0,1]], [[0,1,2],[0,2,1],[1,2,0]]):
+            try:
+                pijmn, pijmx, pijkmn, pijkmx = _bounds_case_p23(([X[0][i] for i in ixOrder1],
+                                                                 [X[1][i] for i in ixOrder2[:2]]))
+            except AssertionError:
+                if full_output:
+                    print("Bounds error")
+                return False
+            pij = X[1][ixOrder2[-1]]
+            
+            # Accounting for numerical precision errors.
+            pijmn, pijmx, pij = np.around(pijmn, 10), np.around(pijmx, 10), np.around(pij, 10)
+            if not (pijmn<=pij<=pijmx):
+                if full_output:
+                    return False, (pijmn,pijmx), pij
+                return False
+        return True
+    else:
+        raise Exception("Invalid type for X.")
+
 
 # ========================================================= #
 # Functions for checking probability constraints generally. #
