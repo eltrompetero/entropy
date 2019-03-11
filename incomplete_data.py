@@ -157,7 +157,7 @@ def check_triplet(X, full_output=False):
 
     elif type(X) is tuple:
         assert len(X)==2
-        assert (X[0]>=0).all() and (X[1]>=0).all()
+        assert (X[0]>=0).all() and (X[1]>=0).all(), "Must be in {0,1} basis."
 
         # check all possible orderings of correlations
         for ixOrder1,ixOrder2 in zip([[0,1,2],[1,0,2],[2,0,1]], [[0,1,2],[0,2,1],[1,2,0]]):
@@ -235,24 +235,25 @@ def A_matrix_for_ising(allstates):
     A = np.vstack((A,-A))
     return A
 
-def check_joint_consistency(X,full_output=False,linprog_options={},allstates=None):
+def check_joint_consistency(X, full_output=False, linprog_options={}, allstates=None):
     """
-    Given a binary data set with incomplete data points indicated by 0's, check
-    whether or not measurable marginals are compatible with a real probability
-    distribution.
+    Given a binary data set with incomplete data points indicated by 0's, check whether or
+    not measurable marginals are compatible with a real probability distribution.
     
     Parameters
     ----------
     X : ndarray
-        Should be of shape (n_samples, n_spins) where -1 and 1 are up and down and 0 is a hidden spin.
+        Should be of shape (n_samples, n_spins) where -1 and 1 are up and down and 0 is a
+        hidden spin.
     full_output : bool,False
-    linprog_options : dict,{}
+    linprog_options : dict, {}
 
     Returns
     -------
     success : bool/dcit
         Returns True if consistent. Can opt to return all details of solution.
     """
+
     from scipy.optimize import linprog
 
     n = X.shape[1]
