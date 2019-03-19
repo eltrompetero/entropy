@@ -1,5 +1,7 @@
+# ===================================================================================== #
 # Module for entropy estimators.
 # Author: Eddie Lee, edlee@alumni.princeton.edu
+# ===================================================================================== #
 import numpy as np
 from .entropy import *
 from warnings import warn
@@ -60,31 +62,30 @@ def cross_entropy(X, Y, method='naive', return_p=False):
 
 def S_ma(data):
     """
-        Calculate Ma bound on entropy by partitioning the data set according to
-        the number of votes in the majority.
-        See Strong et al. 1998.
-    2014-02-19
+    Calculate Ma bound on entropy by partitioning the data set according to the number of
+    votes in the majority.  See Strong et al. 1998 and Lee et al. 2015.
+
+    This is a simply application of the convexity of the entropy function.
+
+    Parameters
+    ----------
+    data : ndarray
+
+    Returns
+    -------
+    float
+        Ma estimate in bits.
     """
-    from misc_fcns import unique_rows
+    
+    if data.ndim==1:
+        data = data[:,None]
+    else:
+        assert data.ndim==2
 
-    majCounts = np.sum(data,1)
-    states = data[unique_rows(data),:]
-    l = states.shape[0]
-    pC = np.zeros((l))
-    pK = np.zeros((l))
-
-    i = 0
-    for k in range(l):
-        ix = majCounts==k
-        if np.sum(ix)>0:
-            pK[i] = np.sum(ix).astype(float)/ix.size
-
-            probs = get_state_probs(data[ix,:],allstates=states)
-            pC[i] = np.sum(probs**2)
-        else:
-            pK[i],pC[i] = 0., 0.
-        i += 1
-    return -np.nansum( pK*np.log2(pK*pC) )
+    _,p = np.unique(data, axis=0, return_counts=True)
+    p = p/p.sum()
+    
+    return -np.log2(p.dot(p))
 
 def S_quad(X, sample_fraction, n_boot,
            X_is_count=False,
