@@ -157,8 +157,8 @@ def S_quad(X, sample_fraction, n_boot,
 
     fit = np.polyfit(1/np.floor(sample_fraction*Xsum), estS.mean(1), fit_order)
     err = np.polyval(fit, 1/np.floor(sample_fraction*Xsum)) - estS.mean(1)
-    if fit[0]<0:
-        print("Fit curvature is negative.")
+    if fit[0]>0:
+        print("Fit curvature is positive.")
     
     if disp:
         fig, ax = plt.subplots()
