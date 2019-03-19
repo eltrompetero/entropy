@@ -94,10 +94,13 @@ def S_quad(X, sample_fraction, n_boot,
            parallel=False,
            symmetrize=False,
            fit_order=2,
+           fit_tol=.01,
            disp=False):
     """
     Calculate entropy using quadratic extrapolation to infinite data size. The points used
     to make the extrapolation are given in sample_fraction. Units of bits.
+
+    Flexibility to do a spline fit of any order.
 
     Parameters
     ----------
@@ -117,6 +120,8 @@ def S_quad(X, sample_fraction, n_boot,
     symmetrize : bool, False
         If True, all probabilities are halved and then measurements are doubled.
     fit_order : int, 2
+        If 0, then order is increased til the change in the estimate is below fit_tol.
+    fit_tol : float, 0.01
 
     Returns
     -------
@@ -155,8 +160,26 @@ def S_quad(X, sample_fraction, n_boot,
                 if symmetrize:
                     p = np.concatenate((p/2,p/2))
                 estS[i,j] = -p.dot(np.log2(p))
+    
+    if fit_order:
+        fit = np.polyfit(1/np.floor(sample_fraction*Xsum), estS.mean(1), fit_order)
+    else:
+        # find lowest order of fit that works well
+        x, y = 1/np.floor(sample_fraction*Xsum), estS.mean(1)
+        fit_order = 1
+        fit = np.zeros(1)
+        
+        close = False
+        while fit_order<10 and not close:
+            newfit = np.polyfit(x, y, fit_order+1)
+            if abs(fit[-1]-newfit[-1])<fit_tol:
+                close = True
+            else:
+                fit = newfit
+                fit_order += 1
+        if fit_order==10:
+            warn("Optimal fit order is large.")
 
-    fit = np.polyfit(1/np.floor(sample_fraction*Xsum), estS.mean(1), fit_order)
     err = np.polyval(fit, 1/np.floor(sample_fraction*Xsum)) - estS.mean(1)
     if fit[0]>0:
         print("Fit curvature is positive.")
@@ -168,7 +191,7 @@ def S_quad(X, sample_fraction, n_boot,
         x = np.linspace(0, 1/np.floor(sample_fraction.min()*Xsum))
         ax.plot(x, np.polyval(fit, x), 'k-')
     
-    output = [np.polyval(fit,0)]
+    output = [fit[-1]]
     if return_fit:
         output += [fit, err]
     if disp:
