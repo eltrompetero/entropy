@@ -170,14 +170,14 @@ def S_quad(X, sample_fraction, n_boot,
         fit = np.zeros(1)
         
         close = False
-        while fit_order<10 and not close:
+        while fit_order<len(sample_fraction) and not close:
             newfit = np.polyfit(x, y, fit_order+1)
             if abs(fit[-1]-newfit[-1])<fit_tol:
                 close = True
             else:
                 fit = newfit
                 fit_order += 1
-        if fit_order==10:
+        if fit_order==len(sample_fraction):
             warn("Optimal fit order is large.")
 
     err = np.polyval(fit, 1/np.floor(sample_fraction*Xsum)) - estS.mean(1)
