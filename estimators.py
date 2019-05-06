@@ -6,6 +6,7 @@ import numpy as np
 from .entropy import *
 from warnings import warn
 from misc.utils import unique_rows
+from multiprocess import Pool, cpu_count
 import matplotlib.pyplot as plt
 
 
@@ -87,7 +88,7 @@ def S_ma(data):
     
     return -np.log2(p.dot(p))
 
-def S_quad(X, sample_fraction, n_boot,
+def S_poly(X, sample_fraction, n_boot,
            X_is_count=False,
            return_fit=False,
            rng=None,
@@ -96,9 +97,8 @@ def S_quad(X, sample_fraction, n_boot,
            fit_order=2,
            fit_tol=.01,
            disp=False):
-    """
-    Calculate entropy using quadratic extrapolation to infinite data size. The points used
-    to make the extrapolation are given in sample_fraction. Units of bits.
+    """Calculate entropy using polynomial extrapolation to infinite data size. The points
+    used to make the extrapolation are given in sample_fraction. Units of bits.
 
     Flexibility to do a spline fit of any order.
 
@@ -114,7 +114,7 @@ def S_quad(X, sample_fraction, n_boot,
     X_is_count : bool, False
         If X is not a sample but a count of each state in the data.
     return_fit : bool, False
-        If True, return statistics of quadratic fit.
+        If True, return statistics of polynomial fit.
     rng : np.random.RandomState, None
     parallel : bool, False
     symmetrize : bool, False
@@ -128,26 +128,26 @@ def S_quad(X, sample_fraction, n_boot,
     float
         Estimated entropy in bits.
     ndarray, optional
-        Coefficients for quadratic fit.
+        Coefficients for polynomial fit.
     float, optional
         Fit error.
     mpl.plt.Figure, optional
         Visual rep. of fit.
     """
     
+    # check inputs
     assert X.ndim==1
     if not type(sample_fraction) is np.ndarray:
         sample_fraction = np.array(sample_fraction)
-
     rng = rng or np.random
-    
     if not X_is_count:
         X = np.unique(X, return_counts=True)[1]
     Xsum = X.sum()
     assert Xsum>1, "Must provide more than one state to calculate bootstrap."
-
+    
+    # Generate bootstrap sample for all fractions in sample_fraction
     if parallel:
-        estS = _S_quad_parallel(X, sample_fraction, n_boot, symmetrize)
+        estS = _S_poly_parallel(X, sample_fraction, n_boot, symmetrize)
     else:
         estS = np.zeros((len(sample_fraction),n_boot))
         ix = list(range(len(X)))
@@ -161,6 +161,7 @@ def S_quad(X, sample_fraction, n_boot,
                     p = np.concatenate((p/2,p/2))
                 estS[i,j] = -p.dot(np.log2(p))
     
+    # fit polynomial to averages of bootstrapped samples
     if fit_order:
         fit = np.polyfit(1/np.floor(sample_fraction*Xsum), estS.mean(1), fit_order)
     else:
@@ -177,13 +178,14 @@ def S_quad(X, sample_fraction, n_boot,
             else:
                 fit = newfit
                 fit_order += 1
-        if fit_order==(len(sample_fraction)-1)
+        if fit_order==(len(sample_fraction)-1):
             warn("Optimal fit order is large.")
 
     err = np.polyval(fit, 1/np.floor(sample_fraction*Xsum)) - estS.mean(1)
     if fit[0]>0:
         print("Fit curvature is positive.")
     
+    # optional plotting
     if disp:
         fig, ax = plt.subplots()
         ax.plot(1/np.floor(sample_fraction*Xsum), estS.mean(1), '.')
@@ -191,6 +193,7 @@ def S_quad(X, sample_fraction, n_boot,
         x = np.linspace(0, 1/np.floor(sample_fraction.min()*Xsum))
         ax.plot(x, np.polyval(fit, x), 'k-')
     
+    # output
     output = [fit[-1]]
     if return_fit:
         output += [fit, err]
@@ -201,7 +204,7 @@ def S_quad(X, sample_fraction, n_boot,
         return output[0]
     return tuple(output)
 
-def _S_quad_parallel(X, sample_fraction, n_boot,
+def _S_poly_parallel(X, sample_fraction, n_boot,
                      symmetrize):
     """
     Parameters
@@ -216,7 +219,6 @@ def _S_quad_parallel(X, sample_fraction, n_boot,
     ndarray
     """
     
-    from multiprocess import Pool, cpu_count
     estS = np.zeros((len(sample_fraction),n_boot))
    
     ix = list(range(len(X)))
