@@ -1,14 +1,14 @@
+# ====================================================================================== #
 # Module for exploring the energy landscape of the Ising model.
 # Author: Edward Lee, edlee@alumni.princeton.edu
-
+# ====================================================================================== #
 import numpy as np
 import multiprocess as mp
 
 
-
-class EnergyLandscape(object):
+class EnergyLandscape():
     """Class for calculating features of energy landscape of Ising model in {-1,1} basis."""
-    def __init__(self,calc_observables,multipliers):
+    def __init__(self, calc_observables, multipliers):
         """
         Parameters
         ----------
@@ -21,8 +21,8 @@ class EnergyLandscape(object):
         self.multipliers=multipliers
 
     def _find_energy_basin(self,x,J):
-	"""
-	Find the local energy minimum.
+        """
+        Find the local energy minimum.
 
         Parameters
         ----------
@@ -30,28 +30,28 @@ class EnergyLandscape(object):
             A single state.
         J : ndarray
             Langrangian multipliers.
-	"""
-	x = x.copy()
-	xprev = np.zeros(len(x))
-	while (x!=xprev).any():
-	    xprev = x.copy()
-	    x = self._flip_least_stable_spin(x,J)
-	return x
-	
+        """
+        x = x.copy()
+        xprev = np.zeros(len(x))
+        while (x!=xprev).any():
+            xprev = x.copy()
+            x = self._flip_least_stable_spin(x,J)
+        return x
+        
     def _flip_least_stable_spin(self,x,J):
-	"""
-	Flip the least stable spin.
-	"""
-	E = -self.calc_observables(x[None,:]).dot(J)
-	dE = np.zeros(x.size)
-	for i in range(x.size):
-	    x[i] *= -1
-	    dE[i] = -self.calc_observables(x[None,:]).dot(J)-E
-	    x[i] *= -1
+        """
+        Flip the least stable spin.
+        """
+        E = -self.calc_observables(x[None,:]).dot(J)
+        dE = np.zeros(x.size)
+        for i in range(x.size):
+            x[i] *= -1
+            dE[i] = -self.calc_observables(x[None,:]).dot(J)-E
+            x[i] *= -1
 
-	if (dE<0).any():
-	    x[np.argmin(dE)] *= -1
-	return x
+        if (dE<0).any():
+            x[np.argmin(dE)] *= -1
+        return x
 
     def energy_basins(self,X,multicore=True):
         """Energy basin for each given state.

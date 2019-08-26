@@ -1,8 +1,8 @@
+# ====================================================================================== #
 # Functions necessary for calculating entropies.
-# 2013-06-25
-
+# Author: Edward Lee, edlee@alumni.princeton.edu
+# ====================================================================================== #
 import numpy as np
-#import clusters as cluster
 from numba import jit
 from misc.utils import unique_rows
 from numba import float64
@@ -266,15 +266,20 @@ def cluster_probabilities(data,order):
 
 @jit
 def MI(pmat):
-    """
-    Calculate mutual information between the joint probability distributions in bits. Use with joint_p_mat().
-    2015-04-02
+    """Calculate mutual information between the joint probability distributions in bits.
+    Use with joint_p_mat().
 
-    Params:
-    -------
-    pmat (ndarray)
+    Parameters
+    ----------
+    pmat : ndarray
         2D array
+
+    Returns
+    -------
+    float
+        Mutual information in bits.
     """
+
     mi = np.zeros((pmat.size))
     p1 = pmat.sum(1)
     p2 = pmat.sum(0)
@@ -704,74 +709,6 @@ def calc_sisj(data,weighted=None,concat=False, excludeEmpty=False):
         return np.concatenate((si,sisj))
     else:
         return si, sisj
-
-def pair_corr(data,weighted=None,return_square=False,ignorenan=False,subtractmean=True):
-    """
-    Calculate thecorrelation matrix <sisj>-<si><sj>.
-
-    Parameters
-    ----------
-    data (ndarray)
-    **kwargs:
-    weighted (np.ndarray,None) : 
-        Calculate single and pairwise means given fractional weights for each state in the data such that a
-        state only appears with some weight, typically less than one.
-    return_square (bool,False)
-        return Cij matrix with variances
-    ignorenan (bool=False)
-        If True, exclude nan from calculation. This may return a set of correlations that are incompatible
-        with a joint probability distribution.
-    subtractmean (bool=True)
-        Subtract product of means <si><sj>.
-
-    Returns
-    -------
-    cij : ndarray
-    cijMat : ndarray
-        Only returned if return_square is True.
-    """
-    (S,N) = data.shape
-    cij = np.zeros(N*(N-1)//2)
-
-    if ignorenan:
-        k=0
-        for i in range(N-1):
-            for j in range(i+1,N):
-                nanix=np.logical_or( np.isnan(data[:,i]),np.isnan(data[:,j]) )
-                if subtractmean:
-                    cij[k] = ( (data[nanix==0,i]*data[nanix==0,j]).mean() - 
-                                data[nanix==0,i].mean()*data[nanix==0,j].mean() )
-                else:
-                    cij[k] = (data[nanix==0,i]*data[nanix==0,j]).mean()
-                k+=1
-
-        if return_square:
-            cijMat = squareform(cij)
-            cijMat[np.eye(N)==1] = si
-            return cij,cijMat
-        else:
-            return cij
-    else:
-        if weighted is None:
-            weighted = np.ones((data.shape[0]))
-        if subtractmean:
-            si = np.sum(data*np.expand_dims(weighted,1),0)/float(np.sum(weighted))
-        k=0
-        for i in range(N-1):
-            for j in range(i+1,N):
-                if subtractmean:
-                    cij[k] = np.sum(data[:,i]*data[:,j]*weighted)/float(np.sum(weighted))\
-                              -si[i]*si[j]
-                else:
-                    cij[k] = np.sum(data[:,i]*data[:,j]*weighted)/float(np.sum(weighted))
-                k+=1
-
-        if return_square:
-            cijMat = squareform(cij)
-            cijMat[np.eye(N)==1] = si
-            return cij,cijMat
-        else:
-            return cij
 
 def nan_calc_sisj(data):
     """
