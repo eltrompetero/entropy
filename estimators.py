@@ -83,7 +83,7 @@ def S_ma(data):
     else:
         assert data.ndim==2
 
-    _,p = np.unique(data, axis=0, return_counts=True)
+    _, p = np.unique(data, axis=0, return_counts=True)
     p = p/p.sum()
     
     return -np.log2(p.dot(p))
@@ -138,7 +138,10 @@ def S_poly(X, sample_fraction, n_boot,
     # check inputs
     assert X.ndim==1
     if not type(sample_fraction) is np.ndarray:
-        sample_fraction = np.array(sample_fraction)
+        if hasattr(sample_fraction,'__len__'):
+            sample_fraction = np.array(sample_fraction)
+        else:
+            sample_fraction = np.array([sample_fraction])
     rng = rng or np.random
     if not X_is_count:
         X = np.unique(X, return_counts=True)[1]
