@@ -8,15 +8,16 @@ from misc.utils import unique_rows
 from numba import float64
 
 
-class DiscreteEntropy(object):
-    def __init__(self,bins,ndim=None):
-        """
-        Class for entropy estimation.
-        2016-12-08
+class DiscreteEntropy():
+    def __init__(self, bins, ndim=None):
+        """Class for entropy estimation.
         
-        Params:
-        -------
+        Parameters
+        ----------
+        bins : int
+        ndim : int, None
         """
+
         self.bins = bins
         if ndim is None:
             try:
@@ -64,10 +65,10 @@ class DiscreteEntropy(object):
                 disclabel[i] = [bisect(self.edges[j],x_,hi=len(self.edges[j])-2) for x_ in x]
         return unique_rows(disclabel,return_inverse=True)
         
-    def estimate_S(self,X,method='naive',binRange=[]):
+    def estimate_S(self, X, method='naive', binRange=[]):
         """
-        Params:
-        -------
+        Parameters
+        ----------
         X (array)
             n_samples x n_dim
         method (str='naive')
@@ -76,10 +77,14 @@ class DiscreteEntropy(object):
         binRange (list=[])
             Bounds on the bin range. Bins will be increased on the dimensions from left to right
             consecutively. This must be given for 'extrapolate' method.
+
+        Returns
+        -------
+        float
         """
         if method=='naive':
             self._estimate_pdf(X)
-            self.S = -np.nansum( self.pdf*np.log2(self.pdf) )
+            self.S = -np.nansum(self.pdf * np.log2(self.pdf))
         elif method=='extrapolate':
             S = []
             bins=[binRange[0]]*self.ndim
@@ -158,10 +163,10 @@ def bootstrap_MI(data,ix1,ix2,nIters,sampleFraction=1.):
     return miSamples
 
 #@jit(cache=True)
-def joint_p_mat(data,ix1,ix2,extra_states=None):
-    """
-    Return joint probability matrix between different groups of columns of a data matrix. Works on any type of
-    data that can be identified separately by misc.utils.unique_rows().
+def joint_p_mat(data, ix1, ix2, extra_states=None):
+    """Return joint probability matrix between different groups of columns of a data
+    matrix. Works on any type of data that can be identified separately by
+    np.unique.
     
     Parameters
     ----------
@@ -170,31 +175,36 @@ def joint_p_mat(data,ix1,ix2,extra_states=None):
     ix1,ix2 : list
         Index of columns that correspond to groups of columns to compare.
     extra_states : list
-        List of states to include into data. This should be a list of two elements. Each element
-        will be appended to data[:,ix2] and data[:,ix2].
+        List of states to include into data. This should be a list of two elements.
+        Each element will be appended to data[:,ix2] and data[:,ix2].
+
+    Returns
+    -------
+    ndarray
     """
+
     assert len(ix1)>=1 and len(ix2)>=1
     
     data1 = data[:,ix1]
     data2 = data[:,ix2]
     if not extra_states is None:
-        data1=np.vstack((extra_states[0]))
-        data2=np.vstack((extra_states[1]))
+        data1 = np.vstack((extra_states[0]))
+        data2 = np.vstack((extra_states[1]))
 
-    uniq1 = data1[unique_rows(data1)]
-    uniq2 = data2[unique_rows(data2)]
+    uniq1 = data1[np.unique(data1, axis=0, return_index=True)[1]]
+    uniq2 = data2[np.unique(data2, axis=0, return_index=True)[1]]
     
-    p = np.zeros((len(uniq1),len(uniq2)))
+    p = np.zeros((len(uniq1), len(uniq2)))
 
     if not extra_states is None:
         # Remove extra states.
-        data1=data1[:-len(extra_states[0])]
-        data2=data2[:-len(extra_states[1])]
+        data1 = data1[:-len(extra_states[0])]
+        data2 = data2[:-len(extra_states[1])]
 
-    for row,i in enumerate(uniq1):
+    for row, i in enumerate(uniq1):
         for col,j in enumerate(uniq2):
             p[row,col] = np.logical_and( (data[:,ix1]==i[None,:]).all(1),
-                                     (data[:,ix2]==j[None,:]).all(1) ).sum()
+                                         (data[:,ix2]==j[None,:]).all(1) ).sum()
     p = p / p.sum()
     return p
 
