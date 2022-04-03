@@ -3,13 +3,18 @@
 # Author: Eddie Lee, edlee@alumni.princeton.edu
 # ===================================================================================== #
 import numpy as np
-from .entropy import *
 from warnings import warn
-from misc.utils import unique_rows
 from multiprocess import Pool, cpu_count
 import matplotlib.pyplot as plt
+from itertools import combinations
+
+from .entropy import *
 
 
+
+# ======= #
+# Methods #
+# ======= #
 def cross_entropy(X, Y, method='naive', return_p=False):
     """Estimate cross entropy from two samples.
     \sum_i  p(x_i) \log_2 (p(x_i)/q(y_i))
@@ -36,7 +41,7 @@ def cross_entropy(X, Y, method='naive', return_p=False):
 
     if method=='naive':
         XY = np.vstack((X,Y))
-        digitizedStates = unique_rows(XY, return_inverse=True)
+        digitizedStates = np.unique(XY, axis=0, return_inverse=True)
         uniqx = digitizedStates[:len(X)]
         uniqy = digitizedStates[len(X):]
         uniqStates = np.unique(digitizedStates)
@@ -335,3 +340,229 @@ def fractional_dkl_quad(X,sample_fraction,n_boot,q,X_is_count=False,return_estF=
     if return_estF:
         return np.polyval(fit,0),estF
     return np.polyval(fit,0)
+
+# ======= #
+# Classes # 
+# ======= #
+class ClusterEntropy():
+    def __init__(self, X):
+        """Class for using idea in Cocco and Monasson (2011) to iteratively estimate
+        the entropy of a pairwise maxent model on binary spins.
+
+        In order to determine an estimate, it is important to define a threshold
+        theta at which cluster estimates are excluded from the sum.
+
+        Built to harness multiple threads to iterate over sets of clusters.
+
+        Parameters
+        ----------
+        X : ndarray
+        """
+        
+        self.X = X
+        
+        # keep track of all cluster entropies calculated
+        self.dS = {}
+        self.S = {}
+
+    def calc_S(self, clus, cache=True):
+        """Calculate entropy of given cluster and cache it into dict of entropy S.
+
+        Parameters
+        ----------
+        clus : set
+            List of spin indices to include in this cluster.
+
+        Returns
+        -------
+        float
+            Entropy in nats.
+        """
+        
+        # no empty clusters allowed
+        assert len(clus)
+        if clus in self.S.keys():
+            return self.S[clus]
+
+        # naive entropy estimator
+        counts = np.unique(self.X[:,list(clus)], axis=0, return_counts=True)[1]
+        p = counts / counts.sum()
+        S = -(p * np.log(p)).sum()
+        if cache: self.S[clus] = S
+        return S
+
+    def calc_dS(self, clus, cache=True):
+        """Calculate cluster entropy dS for a given cluster recursively. Adds newly
+        calculated clusters to dS for use with future calculation.
+
+        Parameters
+        ----------
+        clus : set
+            List of spin indices to include in this cluster.
+
+        Returns
+        -------
+        float
+        """
+
+        # no empty clusters allowed
+        assert(len(clus))
+        clus = frozenset(clus)
+
+        # if already calculated
+        if clus in self.dS.keys():
+            return self.dS[clus]
+        elif len(clus)==1:
+            if cache: self.dS[clus] = self.calc_S(clus)
+            return self.calc_S(clus, cache=cache)
+
+        thisdS = self.calc_S(clus, cache=cache)
+        for i in range(1, len(clus)):
+            for subclus in combinations(clus, i):
+                thisdS -= self.calc_dS(subclus, cache=cache)
+        if cache: self.dS[clus] = thisdS
+        return thisdS
+    
+    def _ordered_dS(self):
+        """Set up a cluster size ordered list of dS."""
+        
+        if 'ordered_dS' in self.__dict__.keys():
+            return self.ordered_dS
+        
+        ordered_dS = []
+        for i in range(1, len(self.dS)+1):
+            ordered_dS.append([])
+            for ijk in combinations(range(self.X.shape[1]), i):
+                ordered_dS[-1].append(self.calc_dS(ijk))
+        self.ordered_dS = ordered_dS
+
+    def add_clusters(self, k):
+        """Generate dS for specific cluster size. See .setup_clusters().
+
+        Parameters
+        ----------
+        k : int
+            Cluster size to compute.
+        """
+        
+        from scipy.special import binom
+        assert k>=1
+
+        # for all clusters of sizes k and through each cluster...
+        self.ordered_dS = []
+        if k==1:
+            self.ordered_dS.append([])
+            for ijk in combinations(range(self.X.shape[1]), k):
+                self.ordered_dS[-1].append(self.calc_dS(ijk))
+        else:
+            n_cpus = cpu_count()
+            with Pool() as pool:       
+                self.ordered_dS.append([])
+                def loop_wrapper(args):
+                    istart, iend = args
+                    counter = 0
+                    for ijk_ in combinations(range(self.X.shape[1]), k):
+                        if istart <= counter < iend:
+                            self.calc_dS(ijk_)
+                        counter += 1
+                    return self.S, self.dS
+
+                diter = binom(self.X.shape[1], k) // (n_cpus-1)
+                output = list(pool.map(loop_wrapper,
+                                       [(pid*diter, (pid+1)*diter) for pid in range(n_cpus)]))
+                for out in output:
+                    self.S.update(out[0])
+                    self.dS.update(out[1])
+                    self.ordered_dS[-1].extend(out[1].values())
+ 
+    def setup_clusters(self, mx):
+        """Generate dS for all clusters up to the specified max size.
+
+        Parameters
+        ----------
+        mx : int
+            Max cluster size to compute.
+        """
+        
+        from scipy.special import binom
+        assert mx>=1
+
+        # for all clusters of sizes i and through each cluster...
+        self.ordered_dS = []
+        for i in range(1, min(2, mx+1)):
+            self.ordered_dS.append([])
+            for ijk in combinations(range(self.X.shape[1]), i):
+                self.ordered_dS[-1].append(self.calc_dS(ijk))
+
+        n_cpus = cpu_count()
+        with Pool() as pool:       
+            for i in range(2, mx+1):
+                self.ordered_dS.append([])
+                def loop_wrapper(args):
+                    istart, iend = args
+                    counter = 0
+                    for ijk_ in combinations(range(self.X.shape[1]), i):
+                        if istart <= counter < iend:
+                            self.calc_dS(ijk_)
+                        counter += 1
+                    return self.S, self.dS
+
+                diter = binom(self.X.shape[1], i) // (n_cpus-1)
+                output = list(pool.map(loop_wrapper,
+                                       [(pid*diter, (pid+1)*diter) for pid in range(n_cpus)]))
+                for out in output:
+                    self.S.update(out[0])
+                    self.dS.update(out[1])
+                    self.ordered_dS[-1].extend(out[1].values())
+        
+        # multiprocessing (should be more clever but doesn't work, pipe breaks)
+        #for i in range(2, mx+1):
+        #    def loop_wrapper(*ijk):
+        #        for ijk_ in ijk:
+        #            self.calc_dS(ijk_)
+
+        #    with Manager() as manager:
+        #        # implicitly rely on shared dicts
+        #        self.dS = manager.dict(self.dS)
+        #        self.S = manager.dict(self.S)
+        #        
+        #        combos = list(combinations(range(self.X.shape[1]), i))
+        #        diter = len(combos)//(n_cpus-1)
+        #        for pid in range(n_cpus):
+        #            p = Process(target=loop_wrapper,
+        #                        args=combos[pid*diter:(pid+1)*diter])
+        #            p.start()
+        #        for pid in range(n_cpus):
+        #            p.join()
+        #        self.dS = self.dS.copy()
+        #        self.S = self.S.copy()
+    
+    def plot_dS(self, fig=None, ax=None):
+        """Show distribution of dS for each cluster size to get a sense of how well
+        approximation will work.
+
+        Parameters
+        ----------
+        fig : plt.Figure, None
+        ax : plt.Axes, None
+
+        Returns
+        -------
+        plt.Figure
+        """
+        
+        if fig is None and ax is None:
+            fig, ax = plt.subplots()
+        elif not fig is None and ax is None:
+            ax = fig.add_subplot(111)
+        
+        ordered_dS = self._ordered_dS()
+        for i in range(len(ordered_dS)):
+            ax.plot(np.random.normal(size=len(ordered_dS[i]), scale=.05, loc=i+1),
+                    ordered_dS[i],
+                    '.', c='C0', alpha=.3, mew=0)
+        ax.set(xlabel='order', ylabel=r'$\Delta S$', xticks=range(1, len(ordered_dS)+1))
+        ax.grid()
+        
+        return fig
+#end ClusterEntropy
