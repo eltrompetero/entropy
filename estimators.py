@@ -475,17 +475,19 @@ class ClusterEntropy():
                     self.dS.update(out[1])
                     self.ordered_dS[-1].extend(out[1].values())
  
-    def setup_clusters(self, mx):
+    def setup_clusters(self, mx, n_cpus=None):
         """Generate dS for all clusters up to the specified max size.
 
         Parameters
         ----------
         mx : int
             Max cluster size to compute.
+        n_cpus : int
         """
         
         from scipy.special import binom
         assert mx>=1
+        n_cpus = n_cpus or cpu_count()
 
         # for all clusters of sizes i and through each cluster...
         self.ordered_dS = []
@@ -494,7 +496,6 @@ class ClusterEntropy():
             for ijk in combinations(range(self.X.shape[1]), i):
                 self.ordered_dS[-1].append(self.calc_dS(ijk))
 
-        n_cpus = cpu_count()
         with Pool() as pool:       
             for i in range(2, mx+1):
                 self.ordered_dS.append([])
